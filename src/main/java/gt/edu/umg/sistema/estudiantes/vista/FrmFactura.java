@@ -4,6 +4,8 @@
  */
 package gt.edu.umg.sistema.estudiantes.vista;
 
+import gt.edu.umg.sistema.estudiantes.dao.FacturaDAO;
+import gt.edu.umg.sistema.estudiantes.dao.FacturaDAOImpl;
 /**
  *
  * @author Angel Gomez
@@ -53,11 +55,11 @@ public class FrmFactura extends javax.swing.JFrame {
         jSeparator2 = new javax.swing.JSeparator();
         jScrollPane2 = new javax.swing.JScrollPane();
         tblDetalleFactura = new javax.swing.JTable();
-        jLabel24 = new javax.swing.JLabel();
+        lblSubtotal = new javax.swing.JLabel();
         jLabel25 = new javax.swing.JLabel();
-        jLabel26 = new javax.swing.JLabel();
+        lblIVA = new javax.swing.JLabel();
         jLabel27 = new javax.swing.JLabel();
-        jLabel28 = new javax.swing.JLabel();
+        lblTotal = new javax.swing.JLabel();
         jLabel29 = new javax.swing.JLabel();
         BttnGuardar = new javax.swing.JButton();
         BttnImprimir = new javax.swing.JButton();
@@ -127,15 +129,15 @@ public class FrmFactura extends javax.swing.JFrame {
         ));
         jScrollPane2.setViewportView(tblDetalleFactura);
 
-        jLabel24.setText("Q.");
+        lblSubtotal.setText("Q.");
 
         jLabel25.setText("Subtotal");
 
-        jLabel26.setText("Q.");
+        lblIVA.setText("Q.");
 
         jLabel27.setText("IVA");
 
-        jLabel28.setText("Q.");
+        lblTotal.setText("Q.");
 
         jLabel29.setText("Total");
 
@@ -257,7 +259,7 @@ public class FrmFactura extends javax.swing.JFrame {
                                 .addGap(60, 60, 60)
                                 .addComponent(jLabel25)
                                 .addGap(18, 18, 18)
-                                .addComponent(jLabel24))
+                                .addComponent(lblSubtotal))
                             .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(BttnAgregar)
@@ -269,12 +271,11 @@ public class FrmFactura extends javax.swing.JFrame {
                                         .addGap(53, 53, 53)
                                         .addComponent(jLabel27)
                                         .addGap(18, 18, 18)
-                                        .addComponent(jLabel26))
+                                        .addComponent(lblIVA))
                                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                         .addComponent(jLabel29)
                                         .addGap(18, 18, 18)
-                                        .addComponent(jLabel28)))))))
+                                        .addComponent(lblTotal)))))))
                 .addGap(41, 41, 41))
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
@@ -343,7 +344,7 @@ public class FrmFactura extends javax.swing.JFrame {
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 274, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel24)
+                    .addComponent(lblSubtotal)
                     .addComponent(jLabel25)
                     .addComponent(jLabel17, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel18)
@@ -351,7 +352,7 @@ public class FrmFactura extends javax.swing.JFrame {
                     .addComponent(jLabel20))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel26)
+                    .addComponent(lblIVA)
                     .addComponent(jLabel27)
                     .addComponent(txtCantidad, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txtDescripcion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -360,7 +361,7 @@ public class FrmFactura extends javax.swing.JFrame {
                 .addGap(26, 26, 26)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(BttnAgregar)
-                    .addComponent(jLabel28)
+                    .addComponent(lblTotal)
                     .addComponent(jLabel29))
                 .addGap(22, 22, 22)
                 .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 17, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -391,6 +392,17 @@ public class FrmFactura extends javax.swing.JFrame {
 
     private void BttnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BttnGuardarActionPerformed
         // TODO add your handling code here:
+        FacturaDAO dao = new FacturaDAOImpl();
+        String nit = txtNitReceptor.getText();
+        String nombre = txtNombreCliente.getText();
+        String direccion = txtDirecciónCliente.getText();
+        String fechaEmision = txtFechaHoraEmision.getText();
+        String fechaCertificacion = txtFechaHoraCertificacion.getText();
+        double subtotal = Double.parseDouble(lblSubtotal.getText());
+        double iva = Double.parseDouble(lblIVA.getText());
+        double total = Double.parseDouble(lblTotal.getText());
+        
+        dao.guardarFactura(nit, nombre, direccion, fechaEmision, fechaCertificacion, subtotal, iva, total);
     }//GEN-LAST:event_BttnGuardarActionPerformed
 
     private void txtDescuentoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDescuentoActionPerformed
@@ -411,7 +423,17 @@ public class FrmFactura extends javax.swing.JFrame {
         
         double total = (cantidad * precio) - descuento;
         modelo.addRow(new Object[]{modelo.getRowCount() + 1,"B",cantidad,descripcion,precio,descuento,total});
-       
+        
+        double subtotal = 0;
+        for(int i = 0; i < modelo.getRowCount(); i++){
+        subtotal += Double.parseDouble(modelo.getValueAt(i, 6).toString());
+        }
+        
+        double iva = subtotal*0.12;
+        double totalFactura = subtotal + iva;
+        lblSubtotal.setText(String.format("%.2f", subtotal));
+        lblIVA.setText(String.format("%.2f", iva));
+        lblTotal.setText(String.format("%.2f", totalFactura));
     }//GEN-LAST:event_BttnAgregarActionPerformed
 
     /**
@@ -460,11 +482,8 @@ public class FrmFactura extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel22;
-    private javax.swing.JLabel jLabel24;
     private javax.swing.JLabel jLabel25;
-    private javax.swing.JLabel jLabel26;
     private javax.swing.JLabel jLabel27;
-    private javax.swing.JLabel jLabel28;
     private javax.swing.JLabel jLabel29;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -477,6 +496,9 @@ public class FrmFactura extends javax.swing.JFrame {
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
+    private javax.swing.JLabel lblIVA;
+    private javax.swing.JLabel lblSubtotal;
+    private javax.swing.JLabel lblTotal;
     private javax.swing.JTable tblDetalleFactura;
     private javax.swing.JTextField txtCantidad;
     private javax.swing.JTextField txtDescripcion;
