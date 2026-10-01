@@ -2,3 +2,5 @@ target/
 *.class
 .nb-cache/
 nbproject/private/
+DOCUMENTACION_TECNICA.md
+*.md
