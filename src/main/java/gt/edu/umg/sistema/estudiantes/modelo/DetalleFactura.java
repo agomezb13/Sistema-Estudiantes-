@@ -1,29 +1,55 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package gt.edu.umg.sistema.estudiantes.modelo;
 
-/**
- *
- * @author Angel Gomez
- */
 public class DetalleFactura {
-    
-    private Producto producto;
+
+    private int id;
+    private int facturaId;
+    private int productoId;
     private int cantidad;
     private double precioUnitario;
-    
-    public double calcularSubtotal(){
-        return cantidad*precioUnitario;
+    private double subtotal;
+
+    private Producto producto;
+
+    public DetalleFactura() {
     }
 
-    public Producto getProducto() {
-        return producto;
+    public DetalleFactura(int id, int facturaId, int productoId, int cantidad, double precioUnitario, double subtotal) {
+        this.id = id;
+        this.facturaId = facturaId;
+        this.productoId = productoId;
+        this.cantidad = cantidad;
+        this.precioUnitario = precioUnitario;
+        this.subtotal = subtotal;
     }
 
-    public void setProducto(Producto producto) {
-        this.producto = producto;
+    public double calcularSubtotal() {
+        this.subtotal = this.cantidad * this.precioUnitario;
+        return this.subtotal;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getFacturaId() {
+        return facturaId;
+    }
+
+    public void setFacturaId(int facturaId) {
+        this.facturaId = facturaId;
+    }
+
+    public int getProductoId() {
+        return productoId;
+    }
+
+    public void setProductoId(int productoId) {
+        this.productoId = productoId;
     }
 
     public int getCantidad() {
@@ -32,6 +58,7 @@ public class DetalleFactura {
 
     public void setCantidad(int cantidad) {
         this.cantidad = cantidad;
+        this.subtotal = this.cantidad * this.precioUnitario;
     }
 
     public double getPrecioUnitario() {
@@ -40,5 +67,29 @@ public class DetalleFactura {
 
     public void setPrecioUnitario(double precioUnitario) {
         this.precioUnitario = precioUnitario;
+        this.subtotal = this.cantidad * this.precioUnitario;
+    }
+
+    public double getSubtotal() {
+        return subtotal;
+    }
+
+    public void setSubtotal(double subtotal) {
+        this.subtotal = subtotal;
+    }
+
+    public Producto getProducto() {
+        return producto;
+    }
+
+    public void setProducto(Producto producto) {
+        this.producto = producto;
+        if (producto != null) {
+            this.productoId = producto.getId();
+            if (this.precioUnitario == 0.0) {
+                this.precioUnitario = producto.getPrecio();
+            }
+            this.subtotal = this.cantidad * this.precioUnitario;
+        }
     }
 }

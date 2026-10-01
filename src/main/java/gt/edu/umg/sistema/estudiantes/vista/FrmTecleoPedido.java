@@ -1,0 +1,321 @@
+package gt.edu.umg.sistema.estudiantes.vista;
+
+import gt.edu.umg.sistema.estudiantes.controlador.ClienteController;
+import gt.edu.umg.sistema.estudiantes.controlador.DireccionEnvioController;
+import gt.edu.umg.sistema.estudiantes.controlador.PedidoController;
+import gt.edu.umg.sistema.estudiantes.controlador.ProductoController;
+import gt.edu.umg.sistema.estudiantes.modelo.Cliente;
+import gt.edu.umg.sistema.estudiantes.modelo.DetallePedido;
+import gt.edu.umg.sistema.estudiantes.modelo.DireccionEnvio;
+import gt.edu.umg.sistema.estudiantes.modelo.Pedido;
+import gt.edu.umg.sistema.estudiantes.modelo.Producto;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagLayout;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JInternalFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.table.DefaultTableModel;
+
+public class FrmTecleoPedido extends JInternalFrame {
+
+    private final PedidoController pedidoController;
+    private final ClienteController clienteController;
+    private final ProductoController productoController;
+    private final DireccionEnvioController direccionController;
+    private final Runnable alGuardar;
+    private Pedido actual;
+
+    private final JTextField txtId = new JTextField(8);
+    private final JComboBox<Cliente> cmbCliente;
+    private final JComboBox<DireccionEnvio> cmbDireccion = new JComboBox<>();
+    private final JTextField txtFecha = new JTextField(14);
+    private final JComboBox<String> cmbEstado = new JComboBox<>(new String[]{"PENDIENTE", "CONFIRMADO", "CANCELADO"});
+
+    private final JComboBox<Producto> cmbProducto;
+    private final JTextField txtCantidad = new JTextField("1", 5);
+    private final JTextField txtPrecioUnitario = new JTextField(7);
+
+    private final DefaultTableModel modeloDetalle = FormularioHelper.modeloNoEditable(
+            new String[]{"ID Prod", "Producto", "Cantidad", "Precio Unitario", "Subtotal"}
+    );
+    private final JTable tablaDetalle = new JTable(modeloDetalle);
+    private final JLabel lblTotal = new JLabel("Total: Q. 0.00");
+
+    private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+    private final List<DetallePedido> detallesLocales = new ArrayList<>();
+
+    public FrmTecleoPedido(PedidoController pedidoController, ClienteController clienteController,
+                            ProductoController productoController, DireccionEnvioController direccionController,
+                            Pedido pedido, Runnable alGuardar) {
+        super("Pedido - Registro / Edición", true, true, true, true);
+        this.pedidoController = pedidoController;
+        this.clienteController = clienteController;
+        this.productoController = productoController;
+        this.direccionController = direccionController;
+        this.actual = pedido;
+        this.alGuardar = alGuardar;
+
+        setSize(720, 560);
+        setLocation(60, 30);
+
+        this.cmbCliente = FormularioHelper.comboConOpcionVacia(clienteController.listar(), "-- Seleccione Cliente --");
+        this.cmbProducto = FormularioHelper.comboConOpcionVacia(productoController.listar(), "-- Seleccione Producto --");
+
+        txtId.setEditable(false);
+        txtFecha.setEditable(false);
+        txtPrecioUnitario.setEditable(false);
+        lblTotal.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+        inicializarEventos();
+        construirInterfaz();
+        cargar();
+    }
+
+    private void inicializarEventos() {
+        cmbCliente.addActionListener(e -> actualizarDireccionesCliente());
+
+        cmbProducto.addActionListener(e -> {
+            Producto prod = (Producto) cmbProducto.getSelectedItem();
+            if (prod != null) {
+                txtPrecioUnitario.setText(String.format("%.2f", prod.getPrecio()));
+            } else {
+                txtPrecioUnitario.setText("");
+            }
+        });
+    }
+
+    private void actualizarDireccionesCliente() {
+        cmbDireccion.removeAllItems();
+        Cliente cli = (Cliente) cmbCliente.getSelectedItem();
+        if (cli != null) {
+            List<DireccionEnvio> dirs = direccionController.listarPorCliente(cli.getId());
+            for (DireccionEnvio d : dirs) {
+                cmbDireccion.addItem(d);
+            }
+        }
+    }
+
+    private void construirInterfaz() {
+        JPanel panelCabecera = new JPanel(new GridBagLayout());
+        panelCabecera.setBorder(BorderFactory.createTitledBorder("Datos Generales del Pedido"));
+        FormularioHelper.agregarCampo(panelCabecera, 0, "No. Pedido:", txtId);
+        FormularioHelper.agregarCampo(panelCabecera, 1, "Cliente:", cmbCliente);
+        FormularioHelper.agregarCampo(panelCabecera, 2, "Dirección Envío:", cmbDireccion);
+        FormularioHelper.agregarCampo(panelCabecera, 3, "Fecha:", txtFecha);
+        FormularioHelper.agregarCampo(panelCabecera, 4, "Estado:", cmbEstado);
+
+        JPanel panelAgregarItem = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        panelAgregarItem.setBorder(BorderFactory.createTitledBorder("Agregar Ítems"));
+        panelAgregarItem.add(new JLabel("Producto:"));
+        panelAgregarItem.add(cmbProducto);
+        panelAgregarItem.add(new JLabel("Cant:"));
+        panelAgregarItem.add(txtCantidad);
+        panelAgregarItem.add(new JLabel("Precio:"));
+        panelAgregarItem.add(txtPrecioUnitario);
+
+        JButton btnAgregar = new JButton("Agregar");
+        JButton btnQuitar = new JButton("Quitar Seleccionado");
+        btnAgregar.addActionListener(e -> agregarDetalle());
+        btnQuitar.addActionListener(e -> quitarDetalle());
+
+        panelAgregarItem.add(btnAgregar);
+        panelAgregarItem.add(btnQuitar);
+
+        JScrollPane scrollTabla = new JScrollPane(tablaDetalle);
+        scrollTabla.setPreferredSize(new Dimension(680, 160));
+
+        JPanel panelCentro = new JPanel(new BorderLayout(5, 5));
+        panelCentro.add(panelAgregarItem, BorderLayout.NORTH);
+        panelCentro.add(scrollTabla, BorderLayout.CENTER);
+
+        JPanel panelTotal = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        panelTotal.add(lblTotal);
+        panelCentro.add(panelTotal, BorderLayout.SOUTH);
+
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton btnGrabar = new JButton("Grabar Pedido");
+        JButton btnNuevo = new JButton("Nuevo");
+        JButton btnCancelar = new JButton("Cancelar");
+
+        btnGrabar.addActionListener(e -> grabar());
+        btnNuevo.addActionListener(e -> limpiar());
+        btnCancelar.addActionListener(e -> dispose());
+
+        panelBotones.add(btnGrabar);
+        panelBotones.add(btnNuevo);
+        panelBotones.add(btnCancelar);
+
+        getContentPane().setLayout(new BorderLayout(8, 8));
+        getContentPane().add(panelCabecera, BorderLayout.NORTH);
+        getContentPane().add(panelCentro, BorderLayout.CENTER);
+        getContentPane().add(panelBotones, BorderLayout.SOUTH);
+    }
+
+    private void agregarDetalle() {
+        Producto prod = (Producto) cmbProducto.getSelectedItem();
+        if (prod == null) {
+            JOptionPane.showMessageDialog(this, "Debe seleccionar un producto.", "Validación", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int cantidad;
+        try {
+            cantidad = Integer.parseInt(txtCantidad.getText().trim());
+            if (cantidad <= 0) {
+                JOptionPane.showMessageDialog(this, "La cantidad debe ser mayor a cero.", "Validación", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "La cantidad ingresada no es válida.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        double precio = prod.getPrecio();
+        double subtotal = precio * cantidad;
+
+        DetallePedido det = new DetallePedido(0, 0, prod.getId(), cantidad, precio, subtotal);
+        detallesLocales.add(det);
+
+        modeloDetalle.addRow(new Object[]{
+            prod.getId(),
+            prod.getNombre(),
+            cantidad,
+            String.format("%.2f", precio),
+            String.format("%.2f", subtotal)
+        });
+
+        recalcularTotal();
+        txtCantidad.setText("1");
+        cmbProducto.setSelectedIndex(0);
+    }
+
+    private void quitarDetalle() {
+        int fila = tablaDetalle.getSelectedRow();
+        if (fila < 0) {
+            JOptionPane.showMessageDialog(this, "Seleccione un detalle para quitar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        detallesLocales.remove(fila);
+        modeloDetalle.removeRow(fila);
+        recalcularTotal();
+    }
+
+    private void recalcularTotal() {
+        double total = 0.0;
+        for (DetallePedido det : detallesLocales) {
+            total += det.getSubtotal();
+        }
+        lblTotal.setText(String.format("Total: Q. %.2f", total));
+    }
+
+    private void cargar() {
+        if (actual == null) {
+            limpiar();
+            return;
+        }
+
+        txtId.setText(String.valueOf(actual.getId()));
+        txtFecha.setText(actual.getFecha() != null ? sdf.format(actual.getFecha()) : "");
+        cmbEstado.setSelectedItem(actual.getEstado() != null ? actual.getEstado() : "PENDIENTE");
+
+        for (int i = 0; i < cmbCliente.getItemCount(); i++) {
+            Cliente c = cmbCliente.getItemAt(i);
+            if (c != null && c.getId() == actual.getClienteId()) {
+                cmbCliente.setSelectedIndex(i);
+                break;
+            }
+        }
+
+        actualizarDireccionesCliente();
+        for (int i = 0; i < cmbDireccion.getItemCount(); i++) {
+            DireccionEnvio d = cmbDireccion.getItemAt(i);
+            if (d != null && d.getId() == actual.getDireccionEnvioId()) {
+                cmbDireccion.setSelectedIndex(i);
+                break;
+            }
+        }
+
+        detallesLocales.clear();
+        modeloDetalle.setRowCount(0);
+        if (actual.getDetalles() != null) {
+            for (DetallePedido d : actual.getDetalles()) {
+                detallesLocales.add(d);
+                Producto prod = productoController.buscarPorId(d.getProductoId());
+                String nomProd = prod != null ? prod.getNombre() : "Producto #" + d.getProductoId();
+                modeloDetalle.addRow(new Object[]{
+                    d.getProductoId(),
+                    nomProd,
+                    d.getCantidad(),
+                    String.format("%.2f", d.getPrecio()),
+                    String.format("%.2f", d.getSubtotal())
+                });
+            }
+        }
+        recalcularTotal();
+    }
+
+    private void limpiar() {
+        actual = null;
+        txtId.setText("");
+        txtFecha.setText(sdf.format(new Date()));
+        cmbEstado.setSelectedItem("PENDIENTE");
+        if (cmbCliente.getItemCount() > 0) {
+            cmbCliente.setSelectedIndex(0);
+        }
+        cmbDireccion.removeAllItems();
+        detallesLocales.clear();
+        modeloDetalle.setRowCount(0);
+        recalcularTotal();
+        txtCantidad.setText("1");
+    }
+
+    private void grabar() {
+        Cliente cli = (Cliente) cmbCliente.getSelectedItem();
+        if (cli == null) {
+            JOptionPane.showMessageDialog(this, "Debe seleccionar un cliente.", "Validación", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (detallesLocales.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debe agregar al menos un producto al pedido.", "Validación", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            Pedido p = actual == null ? new Pedido() : actual;
+            p.setClienteId(cli.getId());
+
+            DireccionEnvio dir = (DireccionEnvio) cmbDireccion.getSelectedItem();
+            p.setDireccionEnvioId(dir != null ? dir.getId() : 0);
+
+            p.setEstado((String) cmbEstado.getSelectedItem());
+            p.getDetalles().clear();
+            p.getDetalles().addAll(detallesLocales);
+            p.calcularTotal();
+
+            pedidoController.guardar(p);
+            JOptionPane.showMessageDialog(this, "Pedido registrado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+
+            if (alGuardar != null) {
+                alGuardar.run();
+            }
+            dispose();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error al guardar el pedido: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}

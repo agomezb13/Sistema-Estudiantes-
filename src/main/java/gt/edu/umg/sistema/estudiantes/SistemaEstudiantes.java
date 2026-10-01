@@ -1,23 +1,26 @@
 package gt.edu.umg.sistema.estudiantes;
 
-import gt.edu.umg.sistema.estudiantes.vista.FrmMenuPrincipal;
-import gt.edu.umg.sistema.estudiantes.conexion.ConexionMySQL;
-import java.sql.Connection;
+import gt.edu.umg.sistema.estudiantes.config.ContenedorAplicacion;
+import gt.edu.umg.sistema.estudiantes.vista.FrmInicio;
+import javax.swing.UIManager;
 
 public class SistemaEstudiantes {
 
     public static void main(String[] args) {
-        Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            System.out.println("CONEXION EXITOSA A LA BASE DE DATOS");
-        } else {
-            System.out.println("ERROR: NO SE PUDO CONECTAR A LA BASE DE DATOS");
+        try {
+            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (Exception ignored) {
         }
 
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new FrmMenuPrincipal().setVisible(true);
-            }
+        java.awt.EventQueue.invokeLater(() -> {
+            ContenedorAplicacion contenedor = new ContenedorAplicacion();
+            FrmInicio inicio = new FrmInicio(contenedor);
+            inicio.setVisible(true);
         });
     }
 }

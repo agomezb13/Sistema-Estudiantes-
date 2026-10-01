@@ -1,26 +1,50 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package gt.edu.umg.sistema.estudiantes.modelo;
 
-/**
- *
- * @author Angel Gomez
- */
 public class Producto {
-    
-    private int idProducto;
-    private String nombre;
-    private double precio;
-    private int existencia;
 
-    public int getIdProducto() {
-        return idProducto;
+    private int id;
+    private int categoriaId;
+    private String nombre;
+    private String descripcion;
+    private double precio;
+    private int existencias;
+
+    public Producto() {
     }
 
-    public void setIdProducto(int idProducto) {
-        this.idProducto = idProducto;
+    public Producto(int id, int categoriaId, String nombre, String descripcion, double precio, int existencias) {
+        this.id = id;
+        this.categoriaId = categoriaId;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.precio = precio;
+        this.existencias = existencias;
+    }
+
+    public void agregarAlCarrito() {
+    }
+
+    public void actualizarStock(int cantidad) {
+        this.existencias += cantidad;
+    }
+
+    public void actualizarStock() {
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getCategoriaId() {
+        return categoriaId;
+    }
+
+    public void setCategoriaId(int categoriaId) {
+        this.categoriaId = categoriaId;
     }
 
     public String getNombre() {
@@ -31,6 +55,14 @@ public class Producto {
         this.nombre = nombre;
     }
 
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
     public double getPrecio() {
         return precio;
     }
@@ -39,16 +71,16 @@ public class Producto {
         this.precio = precio;
     }
 
-    public int getExistencia() {
-        return existencia;
+    public int getExistencias() {
+        return existencias;
     }
 
-    public void setExistencia(int existencia) {
-        this.existencia = existencia;
+    public void setExistencias(int existencias) {
+        this.existencias = existencias;
     }
-    
-    public boolean  hayExistencia(int cantidad){
-       return existencia >=cantidad; 
+
+    @Override
+    public String toString() {
+        return nombre + " (Q. " + String.format("%.2f", precio) + ")";
     }
-    
 }

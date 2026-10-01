@@ -1,32 +1,62 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package gt.edu.umg.sistema.estudiantes.conexion;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-/**
- *
- * @author Angel Gomez
- */
+
 public class ConexionMySQL {
-    
-    private static final String URL =
-"jdbc:mysql://localhost:3306/sistema_estudiantes";
-private static final String USER = "root";
-private static final String PASSWORD = "199822";
-public static Connection getConnection() {
-    try {
-        return DriverManager.getConnection(
-            URL,
-            USER,
-            PASSWORD
-        );
-        } catch (SQLException e) {
-            System.out.println("Error de conexión: "+ e.getMessage());
-return null;
+
+    private static String host = "localhost";
+    private static String puerto = "3306";
+    private static String baseDatos = "sistema_ventas";
+    private static String user = "root";
+    private static String password = "";
+
+    public static Connection getConnection() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            String url = "jdbc:mysql://" + host + ":" + puerto + "/" + baseDatos
+                    + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+            return DriverManager.getConnection(url, user, password);
+        } catch (ClassNotFoundException | SQLException e) {
+            System.out.println("Aviso: No se pudo conectar a MySQL (" + e.getMessage() + ")");
+            return null;
         }
-    }    
+    }
+
+    public static boolean probarConexion() {
+        try (Connection cn = getConnection()) {
+            return cn != null && !cn.isClosed();
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    public static void configurar(String nuevoHost, String nuevoPuerto, String nuevaBD, String nuevoUser, String nuevoPass) {
+        host = nuevoHost;
+        puerto = nuevoPuerto;
+        baseDatos = nuevaBD;
+        user = nuevoUser;
+        password = nuevoPass;
+    }
+
+    public static String getHost() {
+        return host;
+    }
+
+    public static String getPuerto() {
+        return puerto;
+    }
+
+    public static String getBaseDatos() {
+        return baseDatos;
+    }
+
+    public static String getUser() {
+        return user;
+    }
+
+    public static String getPassword() {
+        return password;
+    }
 }

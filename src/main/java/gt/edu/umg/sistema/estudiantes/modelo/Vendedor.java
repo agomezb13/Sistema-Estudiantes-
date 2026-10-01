@@ -1,35 +1,30 @@
 package gt.edu.umg.sistema.estudiantes.modelo;
 
-public class Cliente {
+public class Vendedor {
 
     private int id;
     private String nombre;
     private String correo;
     private String telefono;
-    private String direccion;
-    private String numeroDPI;
-    private String NIT;
     private String estado;
 
-    public Cliente() {
+    public Vendedor() {
         this.estado = "ACTIVO";
     }
 
-    public Cliente(int id, String nombre, String correo, String telefono, String direccion, String numeroDPI, String NIT, String estado) {
+    public Vendedor(int id, String nombre, String correo, String telefono, String estado) {
         this.id = id;
         this.nombre = nombre;
         this.correo = correo;
         this.telefono = telefono;
-        this.direccion = direccion;
-        this.numeroDPI = numeroDPI;
-        this.NIT = NIT;
         this.estado = estado;
     }
 
-    public void comprar() {
+    public Factura crearFactura() {
+        return new Factura();
     }
 
-    public void verHistorial() {
+    public void consultarVentas() {
     }
 
     public int getId() {
@@ -64,30 +59,6 @@ public class Cliente {
         this.telefono = telefono;
     }
 
-    public String getDireccion() {
-        return direccion;
-    }
-
-    public void setDireccion(String direccion) {
-        this.direccion = direccion;
-    }
-
-    public String getNumeroDPI() {
-        return numeroDPI;
-    }
-
-    public void setNumeroDPI(String numeroDPI) {
-        this.numeroDPI = numeroDPI;
-    }
-
-    public String getNIT() {
-        return NIT;
-    }
-
-    public void setNIT(String NIT) {
-        this.NIT = NIT;
-    }
-
     public String getEstado() {
         return estado;
     }
@@ -98,6 +69,6 @@ public class Cliente {
 
     @Override
     public String toString() {
-        return nombre + " (NIT: " + (NIT != null ? NIT : "C/F") + ")";
+        return nombre;
     }
 }
