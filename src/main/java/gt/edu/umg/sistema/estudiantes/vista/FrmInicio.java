@@ -23,11 +23,14 @@ import javax.swing.WindowConstants;
 
 public class FrmInicio extends JFrame {
 
+    private static String claveAdmin = "12345";
+
     private final ContenedorAplicacion contenedor;
     private FrmPrincipal frmPrincipal;
 
     private final JComboBox<String> cmbRol = new JComboBox<>(new String[]{"Administrador", "Comprador"});
     private final JComboBox<Cliente> cmbComprador = new JComboBox<>();
+    private final JButton btnNuevoComprador = new JButton("+ Registrar Comprador");
     private final JPasswordField txtPassword = new JPasswordField(16);
     private final JLabel lblPassword = new JLabel("Contraseña:");
     private final JLabel lblHint = new JLabel("Ingrese la contraseña de Administrador.");
@@ -36,8 +39,8 @@ public class FrmInicio extends JFrame {
         this.contenedor = contenedor;
         setTitle("Sistema de Gestión de Ventas - Inicio de Sesión");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        setSize(560, 440);
-        setMinimumSize(new Dimension(500, 380));
+        setSize(580, 460);
+        setMinimumSize(new Dimension(520, 400));
         setLocationRelativeTo(null);
 
         cargarClientesComprador();
@@ -46,7 +49,15 @@ public class FrmInicio extends JFrame {
         actualizarEstadoCampos();
     }
 
-    private void cargarClientesComprador() {
+    public static String getClaveAdmin() {
+        return claveAdmin;
+    }
+
+    public static void setClaveAdmin(String nuevaClave) {
+        claveAdmin = nuevaClave;
+    }
+
+    public void cargarClientesComprador() {
         cmbComprador.removeAllItems();
         List<Cliente> clientes = contenedor.getClienteController().listar();
         for (Cliente c : clientes) {
@@ -77,7 +88,7 @@ public class FrmInicio extends JFrame {
 
         // Panel Central: Formulario de Login
         JPanel panelCentro = new JPanel(new GridBagLayout());
-        panelCentro.setBorder(BorderFactory.createEmptyBorder(15, 30, 15, 30));
+        panelCentro.setBorder(BorderFactory.createEmptyBorder(15, 25, 15, 25));
 
         JPanel formCard = new JPanel(new GridBagLayout());
         formCard.setBorder(BorderFactory.createCompoundBorder(
@@ -86,7 +97,12 @@ public class FrmInicio extends JFrame {
         ));
 
         FormularioHelper.agregarCampo(formCard, 0, "Tipo de Usuario:", cmbRol);
-        FormularioHelper.agregarCampo(formCard, 1, "Comprador:", cmbComprador);
+
+        JPanel panelCompradorFila = new JPanel(new BorderLayout(6, 0));
+        panelCompradorFila.add(cmbComprador, BorderLayout.CENTER);
+        panelCompradorFila.add(btnNuevoComprador, BorderLayout.EAST);
+        FormularioHelper.agregarCampo(formCard, 1, "Comprador:", panelCompradorFila);
+
         FormularioHelper.agregarCampo(formCard, 2, "Contraseña:", txtPassword);
 
         lblHint.setFont(new Font("SansSerif", Font.ITALIC, 11));
@@ -107,6 +123,7 @@ public class FrmInicio extends JFrame {
 
         btnIngresar.addActionListener(e -> intentarLogin());
         btnSalir.addActionListener(e -> System.exit(0));
+        btnNuevoComprador.addActionListener(e -> abrirRegistroComprador());
 
         getRootPane().setDefaultButton(btnIngresar);
 
@@ -129,18 +146,34 @@ public class FrmInicio extends JFrame {
 
         if (esAdmin) {
             cmbComprador.setEnabled(false);
+            btnNuevoComprador.setEnabled(false);
             txtPassword.setEnabled(true);
             lblPassword.setText("Contraseña:");
             lblHint.setText("Ingrese la contraseña de Administrador.");
             txtPassword.requestFocus();
         } else {
             cmbComprador.setEnabled(true);
+            btnNuevoComprador.setEnabled(true);
             txtPassword.setEnabled(false);
             txtPassword.setText("");
             lblPassword.setText("Contraseña (No requerida):");
-            lblHint.setText("Acceso directo como comprador (solo órdenes y stock).");
+            lblHint.setText("Acceso para compradores. Puede seleccionar o registrar un comprador.");
             cmbComprador.requestFocus();
         }
+    }
+
+    private void abrirRegistroComprador() {
+        DlgRegistroComprador dlg = new DlgRegistroComprador(this, contenedor.getClienteController(), nuevo -> {
+            cargarClientesComprador();
+            for (int i = 0; i < cmbComprador.getItemCount(); i++) {
+                Cliente c = cmbComprador.getItemAt(i);
+                if (c != null && c.getId() == nuevo.getId()) {
+                    cmbComprador.setSelectedIndex(i);
+                    break;
+                }
+            }
+        });
+        dlg.setVisible(true);
     }
 
     private void intentarLogin() {
@@ -149,7 +182,7 @@ public class FrmInicio extends JFrame {
 
         if (esAdmin) {
             String pass = new String(txtPassword.getPassword()).trim();
-            if (!"12345".equals(pass)) {
+            if (!claveAdmin.equals(pass)) {
                 JOptionPane.showMessageDialog(this,
                         "Contraseña incorrecta para Administrador.\nPor favor intente nuevamente.",
                         "Acceso Denegado",
@@ -162,6 +195,13 @@ public class FrmInicio extends JFrame {
             abrirPrincipal("ADMIN", null);
         } else {
             Cliente comprador = (Cliente) cmbComprador.getSelectedItem();
+            if (comprador == null) {
+                JOptionPane.showMessageDialog(this,
+                        "Por favor registre o seleccione un comprador para ingresar.",
+                        "Comprador Requerido",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             abrirPrincipal("COMPRADOR", comprador);
         }
     }

@@ -18,7 +18,7 @@ public class FrmPrincipal extends JFrame {
     private final JDesktopPane desktopPane;
     private final ContenedorAplicacion contenedor;
     private final String rol;
-    private final Cliente comprador;
+    private Cliente comprador;
     private FrmEstudiante frmEstudiante;
     private FrmInicio frmInicio;
 
@@ -31,12 +31,7 @@ public class FrmPrincipal extends JFrame {
         this.rol = (rol != null && !rol.trim().isEmpty()) ? rol.toUpperCase() : "ADMIN";
         this.comprador = comprador;
 
-        if ("COMPRADOR".equals(this.rol)) {
-            String nombreCli = comprador != null ? comprador.getNombre() : "Comprador General";
-            setTitle("Sistema de Gestión de Ventas - Portal del Comprador (" + nombreCli + ")");
-        } else {
-            setTitle("Sistema de Gestión de Ventas - Panel de Administración");
-        }
+        actualizarTitulo();
 
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setSize(1100, 720);
@@ -46,7 +41,7 @@ public class FrmPrincipal extends JFrame {
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
-                irAFrmFinal();
+                salirDirecto();
             }
         });
 
@@ -55,6 +50,15 @@ public class FrmPrincipal extends JFrame {
         getContentPane().add(desktopPane, BorderLayout.CENTER);
 
         setJMenuBar(crearMenuSegunRol());
+    }
+
+    private void actualizarTitulo() {
+        if ("COMPRADOR".equals(this.rol)) {
+            String nombreCli = comprador != null ? comprador.getNombre() : "Comprador General";
+            setTitle("Sistema de Gestión de Ventas - Portal del Comprador (" + nombreCli + ")");
+        } else {
+            setTitle("Sistema de Gestión de Ventas - Panel de Administración");
+        }
     }
 
     public void setFrmInicio(FrmInicio frmInicio) {
@@ -107,17 +111,17 @@ public class FrmPrincipal extends JFrame {
 
         // 3. Sesión
         JMenu menuSesion = new JMenu("Sesión");
+        JMenuItem itemMiPerfil = new JMenuItem("Editar Mi Perfil");
         JMenuItem itemCerrarSesion = new JMenuItem("Cerrar Sesión / Cambiar Usuario");
-        JMenuItem itemMenuFinal = new JMenuItem("Menú Final");
         JMenuItem itemSalir = new JMenuItem("Salir del Sistema");
 
+        itemMiPerfil.addActionListener(e -> editarPerfilComprador());
         itemCerrarSesion.addActionListener(e -> irAFrmInicio());
-        itemMenuFinal.addActionListener(e -> irAFrmFinal());
         itemSalir.addActionListener(e -> salirDirecto());
 
-        menuSesion.add(itemCerrarSesion);
-        menuSesion.add(itemMenuFinal);
+        menuSesion.add(itemMiPerfil);
         menuSesion.addSeparator();
+        menuSesion.add(itemCerrarSesion);
         menuSesion.add(itemSalir);
 
         menuBar.add(menuOrdenes);
@@ -191,17 +195,17 @@ public class FrmPrincipal extends JFrame {
 
         // 5. Sistema
         JMenu menuSistema = new JMenu("Sistema");
+        JMenuItem itemClaveAdmin = new JMenuItem("Cambiar Contraseña de Administrador");
         JMenuItem itemInicio = new JMenuItem("Cerrar Sesión / Menú de Inicio");
-        JMenuItem itemMenuFinal = new JMenuItem("Menú Final / Cierre de Sesión");
         JMenuItem itemSalir = new JMenuItem("Salir del Sistema");
 
+        itemClaveAdmin.addActionListener(e -> cambiarClaveAdmin());
         itemInicio.addActionListener(e -> irAFrmInicio());
-        itemMenuFinal.addActionListener(e -> irAFrmFinal());
         itemSalir.addActionListener(e -> salirDirecto());
 
-        menuSistema.add(itemInicio);
-        menuSistema.add(itemMenuFinal);
+        menuSistema.add(itemClaveAdmin);
         menuSistema.addSeparator();
+        menuSistema.add(itemInicio);
         menuSistema.add(itemSalir);
 
         menuBar.add(menuCatalogos);
@@ -211,6 +215,39 @@ public class FrmPrincipal extends JFrame {
         menuBar.add(menuSistema);
 
         return menuBar;
+    }
+
+    private void editarPerfilComprador() {
+        if (comprador == null) {
+            JOptionPane.showMessageDialog(this, "No hay perfil de comprador cargado.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        abrirFormulario(new FrmTecleoCliente(contenedor.getClienteController(), comprador, () -> {
+            Cliente actualizado = contenedor.getClienteController().buscarPorId(comprador.getId());
+            if (actualizado != null) {
+                comprador = actualizado;
+                actualizarTitulo();
+            }
+        }));
+    }
+
+    private void cambiarClaveAdmin() {
+        String actual = JOptionPane.showInputDialog(this, "Ingrese la contraseña actual:", "Cambiar Contraseña", JOptionPane.QUESTION_MESSAGE);
+        if (actual == null) return;
+
+        if (!FrmInicio.getClaveAdmin().equals(actual.trim())) {
+            JOptionPane.showMessageDialog(this, "La contraseña actual no es correcta.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String nueva = JOptionPane.showInputDialog(this, "Ingrese la nueva contraseña de Administrador:", "Nueva Contraseña", JOptionPane.QUESTION_MESSAGE);
+        if (nueva == null || nueva.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "La contraseña no puede estar vacía.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        FrmInicio.setClaveAdmin(nueva.trim());
+        JOptionPane.showMessageDialog(this, "Contraseña de Administrador actualizada correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void abrirAlumnos() {
@@ -250,12 +287,6 @@ public class FrmPrincipal extends JFrame {
         frmInicio.reiniciar();
         frmInicio.setVisible(true);
         frmInicio.toFront();
-    }
-
-    private void irAFrmFinal() {
-        setVisible(false);
-        FrmFinal frmFinal = new FrmFinal(contenedor, this, frmInicio, rol, comprador);
-        frmFinal.setVisible(true);
     }
 
     private void salirDirecto() {
