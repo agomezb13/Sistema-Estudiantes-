@@ -118,14 +118,13 @@ A continuación se describen las entidades que conforman el núcleo de ventas e 
 
 ### 4.8. Paquete de Vistas (`gt.edu.umg.sistema.estudiantes.vista`)
 
-- **`FrmInicio.java`**: **Menú de inicio** de la aplicación. Muestra el título del sistema, estado del servicio de base de datos MySQL con botón para probar o reconfigurar la conexión, botón de acceso al sistema MDI y acceso directo al menú final.
-- **`FrmPrincipal.java`**: Ventana principal MDI (`JFrame` con `JDesktopPane`). Organiza todas las opciones del sistema en menús superiores:
-  - *Catálogos*: Clientes, Categorías, Productos, Vendedores, Gestión Estudiantes.
-  - *Ventas*: Pedidos, Registro de Pagos.
-  - *Inventario*: Control de Inventario y Stock.
-  - *Facturación*: Facturas.
-  - *Sistema*: Menú de Inicio, Menú Final / Cierre de Sesión, Salir.
-- **`FrmFinal.java`**: **Menú final** y cierre de sesión. Muestra un resumen cuantitativo de la sesión (total de clientes, productos, pedidos y facturas) y botones para volver al inicio, regresar al sistema de ventas o salir definitivamente.
+- **`FrmInicio.java`**: **Sistema de Login y Menú de Inicio** de la aplicación. Permite iniciar sesión seleccionando el tipo de usuario:
+  - *Administrador*: Requiere contraseña (`12345`) y concede acceso total al sistema.
+  - *Comprador*: Permite seleccionar el perfil del comprador y acceder al portal de compras (órdenes y stock).
+- **`FrmPrincipal.java`**: Ventana principal MDI (`JFrame` con `JDesktopPane`). Configura dinámicamente sus menús según el rol autenticado:
+  - *Vista de Comprador*: Solo visualiza y gestiona órdenes de compra (`FrmFiltroPedido` / `FrmTecleoPedido`), consulta de disponibilidad de stock (`FrmInventario` en modo lectura) y menú de sesión.
+  - *Vista de Administrador*: Acceso completo a Catálogos (Clientes, Categorías, Productos, Vendedores, Estudiantes), Ventas (Pedidos, Pagos), Inventario (Control y actualización de Stock), Facturación (Facturas) y Sistema.
+- **`FrmFinal.java`**: **Menú final** y cierre de sesión. Muestra un resumen personalizado de la sesión según el rol (estadísticas de órdenes para el comprador o resumen global para el administrador) y permite cambiar de usuario o salir del sistema.
 - **`FormularioHelper.java`**: Clase utilitaria para estandarizar la creación de interfaces Swing (posicionamiento en `GridBagLayout`, modelos de tabla de solo lectura, llenado seguro de comboboxes y apertura centrada en el escritorio MDI).
 - **`FrmFiltroBase.java`**: Clase abstracta base para formularios de consulta interna (`JInternalFrame`). Proporciona tabla paginable/ordenable, campos de filtro y botones estándar (Buscar, Limpiar, Nuevo, Editar, Eliminar).
 - **`FrmFiltroCliente.java`**: Formulario de búsqueda de clientes por nombre, DPI o NIT.

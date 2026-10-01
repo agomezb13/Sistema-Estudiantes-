@@ -28,10 +28,17 @@ public class FrmInventario extends JInternalFrame {
     private final JTextField txtBuscar = new JTextField(16);
     private final JComboBox<Categoria> cmbCategoria;
 
+    private final boolean soloConsulta;
+
     public FrmInventario(InventarioController inventarioController, CategoriaController categoriaController) {
-        super("Inventario - Consulta y Control de Stock", true, true, true, true);
+        this(inventarioController, categoriaController, false);
+    }
+
+    public FrmInventario(InventarioController inventarioController, CategoriaController categoriaController, boolean soloConsulta) {
+        super(soloConsulta ? "Stock de Productos - Disponibilidad" : "Inventario - Consulta y Control de Stock", true, true, true, true);
         this.inventarioController = inventarioController;
         this.categoriaController = categoriaController;
+        this.soloConsulta = soloConsulta;
         this.cmbCategoria = FormularioHelper.comboConOpcionVacia(categoriaController.listar(), "-- Todas las categorías --");
 
         setSize(880, 520);
@@ -70,7 +77,9 @@ public class FrmInventario extends JInternalFrame {
 
         JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
         panelAcciones.add(btnVerDetalle);
-        panelAcciones.add(btnActualizarStock);
+        if (!soloConsulta) {
+            panelAcciones.add(btnActualizarStock);
+        }
 
         JPanel centro = new JPanel(new BorderLayout(0, 6));
         centro.add(panelAcciones, BorderLayout.NORTH);

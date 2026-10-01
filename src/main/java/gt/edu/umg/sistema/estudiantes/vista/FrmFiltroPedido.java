@@ -20,15 +20,33 @@ public class FrmFiltroPedido extends FrmFiltroBase {
     private final JComboBox<String> cmbEstado;
     private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
+    private final Cliente clienteFijo;
+
     public FrmFiltroPedido(PedidoController pedidoController, ClienteController clienteController, ProductoController productoController, DireccionEnvioController direccionController) {
-        super("Pedidos - Consulta y Filtro", new String[]{"Id", "Cliente", "Fecha", "Estado", "Total (Q)"});
+        this(pedidoController, clienteController, productoController, direccionController, null);
+    }
+
+    public FrmFiltroPedido(PedidoController pedidoController, ClienteController clienteController, ProductoController productoController, DireccionEnvioController direccionController, Cliente clienteFijo) {
+        super(clienteFijo != null ? "Mis Órdenes de Compra - Consulta" : "Pedidos - Consulta y Filtro", new String[]{"Id", "Cliente", "Fecha", "Estado", "Total (Q)"});
         this.pedidoController = pedidoController;
         this.clienteController = clienteController;
         this.productoController = productoController;
         this.direccionController = direccionController;
+        this.clienteFijo = clienteFijo;
 
         this.cmbCliente = FormularioHelper.comboConOpcionVacia(clienteController.listar(), "-- Todos los clientes --");
         this.cmbEstado = new JComboBox<>(new String[]{"-- Todos --", "PENDIENTE", "CONFIRMADO", "CANCELADO"});
+
+        if (clienteFijo != null) {
+            for (int i = 0; i < cmbCliente.getItemCount(); i++) {
+                Cliente c = cmbCliente.getItemAt(i);
+                if (c != null && c.getId() == clienteFijo.getId()) {
+                    cmbCliente.setSelectedIndex(i);
+                    break;
+                }
+            }
+            cmbCliente.setEnabled(false);
+        }
 
         FormularioHelper.agregarCampo(panelFiltros, 0, "Cliente:", cmbCliente);
         FormularioHelper.agregarCampo(panelFiltros, 1, "Estado:", cmbEstado);
@@ -61,13 +79,15 @@ public class FrmFiltroPedido extends FrmFiltroBase {
 
     @Override
     protected void limpiarFiltros() {
-        cmbCliente.setSelectedItem(null);
+        if (clienteFijo == null) {
+            cmbCliente.setSelectedItem(null);
+        }
         cmbEstado.setSelectedIndex(0);
     }
 
     @Override
     protected void nuevo() {
-        FormularioHelper.abrirEnEscritorio(this, new FrmTecleoPedido(pedidoController, clienteController, productoController, direccionController, null, this::buscar));
+        FormularioHelper.abrirEnEscritorio(this, new FrmTecleoPedido(pedidoController, clienteController, productoController, direccionController, null, this::buscar, clienteFijo));
     }
 
     @Override
@@ -76,7 +96,7 @@ public class FrmFiltroPedido extends FrmFiltroBase {
         if (id < 0) {
             return;
         }
-        FormularioHelper.abrirEnEscritorio(this, new FrmTecleoPedido(pedidoController, clienteController, productoController, direccionController, pedidoController.buscarPorId(id), this::buscar));
+        FormularioHelper.abrirEnEscritorio(this, new FrmTecleoPedido(pedidoController, clienteController, productoController, direccionController, pedidoController.buscarPorId(id), this::buscar, clienteFijo));
     }
 
     @Override

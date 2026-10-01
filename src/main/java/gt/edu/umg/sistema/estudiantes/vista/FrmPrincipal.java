@@ -1,6 +1,7 @@
 package gt.edu.umg.sistema.estudiantes.vista;
 
 import gt.edu.umg.sistema.estudiantes.config.ContenedorAplicacion;
+import gt.edu.umg.sistema.estudiantes.modelo.Cliente;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import javax.swing.JDesktopPane;
@@ -16,12 +17,27 @@ public class FrmPrincipal extends JFrame {
 
     private final JDesktopPane desktopPane;
     private final ContenedorAplicacion contenedor;
+    private final String rol;
+    private final Cliente comprador;
     private FrmEstudiante frmEstudiante;
     private FrmInicio frmInicio;
 
     public FrmPrincipal(ContenedorAplicacion contenedor) {
+        this(contenedor, "ADMIN", null);
+    }
+
+    public FrmPrincipal(ContenedorAplicacion contenedor, String rol, Cliente comprador) {
         this.contenedor = contenedor;
-        setTitle("Sistema de Gestión de Ventas");
+        this.rol = (rol != null && !rol.trim().isEmpty()) ? rol.toUpperCase() : "ADMIN";
+        this.comprador = comprador;
+
+        if ("COMPRADOR".equals(this.rol)) {
+            String nombreCli = comprador != null ? comprador.getNombre() : "Comprador General";
+            setTitle("Sistema de Gestión de Ventas - Portal del Comprador (" + nombreCli + ")");
+        } else {
+            setTitle("Sistema de Gestión de Ventas - Panel de Administración");
+        }
+
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setSize(1100, 720);
         setMinimumSize(new Dimension(950, 600));
@@ -38,14 +54,80 @@ public class FrmPrincipal extends JFrame {
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(desktopPane, BorderLayout.CENTER);
 
-        setJMenuBar(crearMenu());
+        setJMenuBar(crearMenuSegunRol());
     }
 
     public void setFrmInicio(FrmInicio frmInicio) {
         this.frmInicio = frmInicio;
     }
 
-    private JMenuBar crearMenu() {
+    private JMenuBar crearMenuSegunRol() {
+        if ("COMPRADOR".equals(this.rol)) {
+            return crearMenuComprador();
+        } else {
+            return crearMenuAdmin();
+        }
+    }
+
+    private JMenuBar crearMenuComprador() {
+        JMenuBar menuBar = new JMenuBar();
+
+        // 1. Órdenes de Compra
+        JMenu menuOrdenes = new JMenu("Órdenes de Compra");
+        JMenuItem itemMisOrdenes = new JMenuItem("Mis Órdenes de Compra");
+        JMenuItem itemHacerOrden = new JMenuItem("Hacer Nueva Orden de Compra");
+
+        itemMisOrdenes.addActionListener(e -> abrirFormulario(new FrmFiltroPedido(
+                contenedor.getPedidoController(),
+                contenedor.getClienteController(),
+                contenedor.getProductoController(),
+                contenedor.getDireccionEnvioController(),
+                comprador)));
+
+        itemHacerOrden.addActionListener(e -> abrirFormulario(new FrmTecleoPedido(
+                contenedor.getPedidoController(),
+                contenedor.getClienteController(),
+                contenedor.getProductoController(),
+                contenedor.getDireccionEnvioController(),
+                null,
+                null,
+                comprador)));
+
+        menuOrdenes.add(itemMisOrdenes);
+        menuOrdenes.add(itemHacerOrden);
+
+        // 2. Stock de Productos
+        JMenu menuStock = new JMenu("Stock de Productos");
+        JMenuItem itemConsultarStock = new JMenuItem("Consultar Disponibilidad de Stock");
+        itemConsultarStock.addActionListener(e -> abrirFormulario(new FrmInventario(
+                contenedor.getInventarioController(),
+                contenedor.getCategoriaController(),
+                true)));
+        menuStock.add(itemConsultarStock);
+
+        // 3. Sesión
+        JMenu menuSesion = new JMenu("Sesión");
+        JMenuItem itemCerrarSesion = new JMenuItem("Cerrar Sesión / Cambiar Usuario");
+        JMenuItem itemMenuFinal = new JMenuItem("Menú Final");
+        JMenuItem itemSalir = new JMenuItem("Salir del Sistema");
+
+        itemCerrarSesion.addActionListener(e -> irAFrmInicio());
+        itemMenuFinal.addActionListener(e -> irAFrmFinal());
+        itemSalir.addActionListener(e -> salirDirecto());
+
+        menuSesion.add(itemCerrarSesion);
+        menuSesion.add(itemMenuFinal);
+        menuSesion.addSeparator();
+        menuSesion.add(itemSalir);
+
+        menuBar.add(menuOrdenes);
+        menuBar.add(menuStock);
+        menuBar.add(menuSesion);
+
+        return menuBar;
+    }
+
+    private JMenuBar crearMenuAdmin() {
         JMenuBar menuBar = new JMenuBar();
 
         // 1. Catálogos
@@ -92,7 +174,8 @@ public class FrmPrincipal extends JFrame {
         JMenuItem itemStock = new JMenuItem("Control de Inventario y Stock");
         itemStock.addActionListener(e -> abrirFormulario(new FrmInventario(
                 contenedor.getInventarioController(),
-                contenedor.getCategoriaController())));
+                contenedor.getCategoriaController(),
+                false)));
         menuInventario.add(itemStock);
 
         // 4. Facturación
@@ -108,7 +191,7 @@ public class FrmPrincipal extends JFrame {
 
         // 5. Sistema
         JMenu menuSistema = new JMenu("Sistema");
-        JMenuItem itemInicio = new JMenuItem("Menú de Inicio");
+        JMenuItem itemInicio = new JMenuItem("Cerrar Sesión / Menú de Inicio");
         JMenuItem itemMenuFinal = new JMenuItem("Menú Final / Cierre de Sesión");
         JMenuItem itemSalir = new JMenuItem("Salir del Sistema");
 
@@ -164,13 +247,14 @@ public class FrmPrincipal extends JFrame {
         if (frmInicio == null) {
             frmInicio = new FrmInicio(contenedor);
         }
+        frmInicio.reiniciar();
         frmInicio.setVisible(true);
         frmInicio.toFront();
     }
 
     private void irAFrmFinal() {
         setVisible(false);
-        FrmFinal frmFinal = new FrmFinal(contenedor, this, frmInicio);
+        FrmFinal frmFinal = new FrmFinal(contenedor, this, frmInicio, rol, comprador);
         frmFinal.setVisible(true);
     }
 

@@ -58,16 +58,25 @@ public class FrmTecleoPedido extends JInternalFrame {
     private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
     private final List<DetallePedido> detallesLocales = new ArrayList<>();
 
+    private final Cliente clienteFijo;
+
     public FrmTecleoPedido(PedidoController pedidoController, ClienteController clienteController,
                             ProductoController productoController, DireccionEnvioController direccionController,
                             Pedido pedido, Runnable alGuardar) {
-        super("Pedido - Registro / Edición", true, true, true, true);
+        this(pedidoController, clienteController, productoController, direccionController, pedido, alGuardar, null);
+    }
+
+    public FrmTecleoPedido(PedidoController pedidoController, ClienteController clienteController,
+                            ProductoController productoController, DireccionEnvioController direccionController,
+                            Pedido pedido, Runnable alGuardar, Cliente clienteFijo) {
+        super(clienteFijo != null ? "Orden de Compra - Registro" : "Pedido - Registro / Edición", true, true, true, true);
         this.pedidoController = pedidoController;
         this.clienteController = clienteController;
         this.productoController = productoController;
         this.direccionController = direccionController;
         this.actual = pedido;
         this.alGuardar = alGuardar;
+        this.clienteFijo = clienteFijo;
 
         setSize(720, 560);
         setLocation(60, 30);
@@ -273,10 +282,22 @@ public class FrmTecleoPedido extends JInternalFrame {
         txtId.setText("");
         txtFecha.setText(sdf.format(new Date()));
         cmbEstado.setSelectedItem("PENDIENTE");
-        if (cmbCliente.getItemCount() > 0) {
+        if (clienteFijo != null) {
+            for (int i = 0; i < cmbCliente.getItemCount(); i++) {
+                Cliente c = cmbCliente.getItemAt(i);
+                if (c != null && c.getId() == clienteFijo.getId()) {
+                    cmbCliente.setSelectedIndex(i);
+                    break;
+                }
+            }
+            cmbCliente.setEnabled(false);
+            actualizarDireccionesCliente();
+        } else if (cmbCliente.getItemCount() > 0) {
             cmbCliente.setSelectedIndex(0);
         }
-        cmbDireccion.removeAllItems();
+        if (clienteFijo == null) {
+            cmbDireccion.removeAllItems();
+        }
         detallesLocales.clear();
         modeloDetalle.setRowCount(0);
         recalcularTotal();
