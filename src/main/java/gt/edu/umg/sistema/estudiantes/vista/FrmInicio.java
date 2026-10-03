@@ -102,7 +102,6 @@ public class FrmInicio extends javax.swing.JFrame {
 
         panelNorte = new javax.swing.JPanel();
         lblTitulo = new javax.swing.JLabel();
-        lblSubtitulo = new javax.swing.JLabel();
         lblTipoUsuario = new javax.swing.JLabel();
         cmbTipoAcceso = new javax.swing.JComboBox<>();
         lblPassword = new javax.swing.JLabel();
@@ -115,17 +114,12 @@ public class FrmInicio extends javax.swing.JFrame {
         setTitle("Sistema de Gestión de Ventas - Acceso");
         setResizable(false);
 
-        panelNorte.setBackground(new java.awt.Color(30, 41, 59));
+        panelNorte.setBackground(new java.awt.Color(0, 255, 204));
 
         lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         lblTitulo.setForeground(new java.awt.Color(255, 255, 255));
         lblTitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         lblTitulo.setText("SISTEMA DE GESTIÓN DE VENTAS");
-
-        lblSubtitulo.setFont(new java.awt.Font("Segoe UI", 0, 12)); // NOI18N
-        lblSubtitulo.setForeground(new java.awt.Color(148, 163, 184));
-        lblSubtitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblSubtitulo.setText("Seleccione el modo de acceso al sistema");
 
         javax.swing.GroupLayout panelNorteLayout = new javax.swing.GroupLayout(panelNorte);
         panelNorte.setLayout(panelNorteLayout);
@@ -133,9 +127,7 @@ public class FrmInicio extends javax.swing.JFrame {
             panelNorteLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(panelNorteLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(panelNorteLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(lblTitulo, javax.swing.GroupLayout.DEFAULT_SIZE, 428, Short.MAX_VALUE)
-                    .addComponent(lblSubtitulo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(lblTitulo, javax.swing.GroupLayout.DEFAULT_SIZE, 438, Short.MAX_VALUE)
                 .addContainerGap())
         );
         panelNorteLayout.setVerticalGroup(
@@ -143,9 +135,7 @@ public class FrmInicio extends javax.swing.JFrame {
             .addGroup(panelNorteLayout.createSequentialGroup()
                 .addGap(16, 16, 16)
                 .addComponent(lblTitulo)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(lblSubtitulo)
-                .addContainerGap(16, Short.MAX_VALUE))
+                .addContainerGap(38, Short.MAX_VALUE))
         );
 
         lblTipoUsuario.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -165,7 +155,6 @@ public class FrmInicio extends javax.swing.JFrame {
 
         lblHint.setFont(new java.awt.Font("Segoe UI", 2, 11)); // NOI18N
         lblHint.setForeground(new java.awt.Color(100, 116, 139));
-        lblHint.setText("Acceso libre al catálogo de productos y órdenes.");
 
         btnIngresar.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         btnIngresar.setText("Ingresar");
@@ -175,7 +164,6 @@ public class FrmInicio extends javax.swing.JFrame {
             }
         });
 
-        btnSalir.setFont(new java.awt.Font("Segoe UI", 0, 12)); // NOI18N
         btnSalir.setText("Salir");
         btnSalir.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -191,7 +179,7 @@ public class FrmInicio extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(50, 50, 50)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(lblHint, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(lblHint, javax.swing.GroupLayout.DEFAULT_SIZE, 350, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblTipoUsuario)
@@ -226,10 +214,11 @@ public class FrmInicio extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnIngresar, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnSalir, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(30, Short.MAX_VALUE))
+                .addContainerGap(45, Short.MAX_VALUE))
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     public static void main(String args[]) {
@@ -251,7 +240,6 @@ public class FrmInicio extends javax.swing.JFrame {
     private javax.swing.JComboBox<String> cmbTipoAcceso;
     private javax.swing.JLabel lblHint;
     private javax.swing.JLabel lblPassword;
-    private javax.swing.JLabel lblSubtitulo;
     private javax.swing.JLabel lblTipoUsuario;
     private javax.swing.JLabel lblTitulo;
     private javax.swing.JPanel panelNorte;
