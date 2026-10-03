@@ -4,3 +4,4 @@ target/
 nbproject/private/
 DOCUMENTACION_TECNICA.md
 *.md
+db.properties

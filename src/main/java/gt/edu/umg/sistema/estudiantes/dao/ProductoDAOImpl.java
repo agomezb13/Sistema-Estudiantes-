@@ -1,7 +1,11 @@
 package gt.edu.umg.sistema.estudiantes.dao;
 
+import gt.edu.umg.sistema.estudiantes.conexion.ConexionMySQL;
 import gt.edu.umg.sistema.estudiantes.datos.BaseDatosMemoria;
 import gt.edu.umg.sistema.estudiantes.modelo.Producto;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +20,26 @@ public class ProductoDAOImpl implements ProductoDAO {
             db.getProductos().add(producto);
         } else {
             actualizar(producto);
+        }
+
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn != null) {
+            String sql = "INSERT INTO producto (id, categoria_id, nombre, descripcion, precio, stock, sku) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?) "
+                    + "ON DUPLICATE KEY UPDATE categoria_id=VALUES(categoria_id), nombre=VALUES(nombre), "
+                    + "descripcion=VALUES(descripcion), precio=VALUES(precio), stock=VALUES(stock), sku=VALUES(sku)";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, producto.getId());
+                ps.setInt(2, producto.getCategoriaId() <= 0 ? 1 : producto.getCategoriaId());
+                ps.setString(3, producto.getNombre());
+                ps.setString(4, producto.getDescripcion() == null ? "" : producto.getDescripcion());
+                ps.setDouble(5, producto.getPrecio());
+                ps.setInt(6, producto.getExistencias());
+                ps.setString(7, "PROD-" + producto.getId());
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.out.println("Aviso al persistir producto en BD: " + e.getMessage());
+            }
         }
     }
 
@@ -65,5 +89,15 @@ public class ProductoDAOImpl implements ProductoDAO {
     @Override
     public void eliminar(int id) {
         db.getProductos().removeIf(p -> p.getId() == id);
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn != null) {
+            String sql = "DELETE FROM producto WHERE id = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.out.println("Aviso al eliminar producto en BD: " + e.getMessage());
+            }
+        }
     }
 }

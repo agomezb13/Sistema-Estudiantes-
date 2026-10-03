@@ -38,6 +38,26 @@ public class FacturaDAOImpl implements FacturaDAO {
                 db.getFacturas().add(factura);
             }
         }
+
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn != null) {
+            String sql = "INSERT INTO factura (id, cliente_id, vendedor_id, numero, subtotal, impuesto, total, estado) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+                    + "ON DUPLICATE KEY UPDATE subtotal=VALUES(subtotal), impuesto=VALUES(impuesto), total=VALUES(total), estado=VALUES(estado)";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, factura.getId());
+                ps.setInt(2, factura.getClienteId());
+                ps.setInt(3, factura.getVendedorId() <= 0 ? 1 : factura.getVendedorId());
+                ps.setString(4, factura.getNumero() == null ? "FACT-" + factura.getId() : factura.getNumero());
+                ps.setDouble(5, factura.getSubtotal());
+                ps.setDouble(6, factura.getImpuesto());
+                ps.setDouble(7, factura.getTotal());
+                ps.setString(8, factura.getEstado() == null ? "EMITIDA" : factura.getEstado());
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.out.println("Aviso al persistir factura en BD: " + e.getMessage());
+            }
+        }
     }
 
     @Override
@@ -80,11 +100,20 @@ public class FacturaDAOImpl implements FacturaDAO {
     @Override
     public void eliminar(int id) {
         db.getFacturas().removeIf(f -> f.getId() == id);
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn != null) {
+            String sql = "DELETE FROM factura WHERE id = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.out.println("Aviso al eliminar factura en BD: " + e.getMessage());
+            }
+        }
     }
 
     @Override
     public void guardarFactura(String nit, String nombre, String direccion, String fechaEmision, String fechaCertificacion, double subtotal, double iva, double total) {
-        // Guardar en memoria
         Cliente cliente = null;
         for (Cliente c : db.getClientes()) {
             if (c.getNIT() != null && c.getNIT().equalsIgnoreCase(nit)) {
@@ -106,31 +135,12 @@ public class FacturaDAOImpl implements FacturaDAO {
         factura.setImpuesto(iva);
         factura.setTotal(total);
         factura.setEstado("EMITIDA");
-        db.getFacturas().add(factura);
 
-        // Guardar en base de datos si hay conexion
-        Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            String sql = "INSERT INTO factura (nit_receptor, nombre_cliente, direccion, fecha_emision, fecha_certificacion, subtotal, iva, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement ps = cn.prepareStatement(sql)) {
-                ps.setString(1, nit);
-                ps.setString(2, nombre);
-                ps.setString(3, direccion);
-                ps.setString(4, fechaEmision);
-                ps.setString(5, fechaCertificacion);
-                ps.setDouble(6, subtotal);
-                ps.setDouble(7, iva);
-                ps.setDouble(8, total);
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                System.out.println("Error al guardar factura en BD: " + e.getMessage());
-            }
-        }
+        guardar(factura);
     }
 
     @Override
     public void eliminarFactura(String nit) {
-        // En memoria
         List<Integer> idsClientes = new ArrayList<>();
         for (Cliente c : db.getClientes()) {
             if (c.getNIT() != null && c.getNIT().equalsIgnoreCase(nit)) {
@@ -139,15 +149,16 @@ public class FacturaDAOImpl implements FacturaDAO {
         }
         db.getFacturas().removeIf(f -> idsClientes.contains(f.getClienteId()));
 
-        // En BD
         Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            String sql = "DELETE FROM factura WHERE nit_receptor = ?";
+        if (cn != null && !idsClientes.isEmpty()) {
+            String sql = "DELETE FROM factura WHERE cliente_id = ?";
             try (PreparedStatement ps = cn.prepareStatement(sql)) {
-                ps.setString(1, nit);
-                ps.executeUpdate();
+                for (int cId : idsClientes) {
+                    ps.setInt(1, cId);
+                    ps.executeUpdate();
+                }
             } catch (SQLException e) {
-                System.out.println("Error al eliminar factura en BD: " + e.getMessage());
+                System.out.println("Aviso al eliminar factura en BD: " + e.getMessage());
             }
         }
     }
