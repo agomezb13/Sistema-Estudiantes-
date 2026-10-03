@@ -2,49 +2,24 @@ package gt.edu.umg.sistema.estudiantes.vista;
 
 import gt.edu.umg.sistema.estudiantes.conexion.ConexionMySQL;
 import gt.edu.umg.sistema.estudiantes.config.ContenedorAplicacion;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.SwingConstants;
-import javax.swing.WindowConstants;
 
-public class FrmInicio extends JFrame {
+public class FrmInicio extends javax.swing.JFrame {
 
     private static String claveAdmin = "12345";
-
     private final ContenedorAplicacion contenedor;
     private FrmPrincipal frmPrincipal;
 
-    private final JComboBox<String> cmbTipoAcceso = new JComboBox<>(new String[]{"Invitado", "Administrador"});
-    private final JPasswordField txtPassword = new JPasswordField(16);
-    private final JLabel lblPassword = new JLabel("Contraseña:");
-    private final JLabel lblHint = new JLabel("Acceso libre al catálogo de productos y órdenes.");
+    public FrmInicio() {
+        this(new ContenedorAplicacion());
+    }
 
     public FrmInicio(ContenedorAplicacion contenedor) {
         this.contenedor = contenedor;
-        setTitle("Sistema de Gestión de Ventas - Acceso");
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        setSize(520, 380);
-        setMinimumSize(new Dimension(460, 320));
+        initComponents();
         setLocationRelativeTo(null);
-
-        // Inicializar conexion a MySQL si esta disponible
+        getRootPane().setDefaultButton(btnIngresar);
         ConexionMySQL.inicializarBaseDatos();
-
-        construirInterfaz();
-        configurarEventos();
         actualizarEstadoCampos();
     }
 
@@ -54,70 +29,6 @@ public class FrmInicio extends JFrame {
 
     public static void setClaveAdmin(String nuevaClave) {
         claveAdmin = nuevaClave;
-    }
-
-    private void construirInterfaz() {
-        // Encabezado
-        JPanel panelNorte = new JPanel(new GridLayout(2, 1, 4, 4));
-        panelNorte.setBorder(BorderFactory.createEmptyBorder(20, 20, 18, 20));
-        panelNorte.setBackground(new Color(30, 41, 59));
-
-        JLabel lblTitulo = new JLabel("SISTEMA DE GESTIÓN DE VENTAS", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("SansSerif", Font.BOLD, 20));
-        lblTitulo.setForeground(Color.WHITE);
-
-        JLabel lblSubtitulo = new JLabel("Seleccione el modo de acceso al sistema", SwingConstants.CENTER);
-        lblSubtitulo.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        lblSubtitulo.setForeground(new Color(148, 163, 184));
-
-        panelNorte.add(lblTitulo);
-        panelNorte.add(lblSubtitulo);
-
-        // Formulario central
-        JPanel panelCentro = new JPanel(new GridBagLayout());
-        panelCentro.setBorder(BorderFactory.createEmptyBorder(20, 30, 15, 30));
-
-        JPanel formCard = new JPanel(new GridBagLayout());
-        formCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder("Tipo de Acceso"),
-                BorderFactory.createEmptyBorder(15, 20, 15, 20)
-        ));
-
-        FormularioHelper.agregarCampo(formCard, 0, "Ingresar como:", cmbTipoAcceso);
-        FormularioHelper.agregarCampo(formCard, 1, lblPassword.getText(), txtPassword);
-
-        lblHint.setFont(new Font("SansSerif", Font.ITALIC, 11));
-        lblHint.setForeground(new Color(100, 116, 139));
-        FormularioHelper.agregarCampo(formCard, 2, "", lblHint);
-
-        panelCentro.add(formCard);
-
-        // Botones inferiores
-        JPanel panelSur = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
-        JButton btnIngresar = new JButton("Ingresar");
-        JButton btnSalir = new JButton("Salir");
-
-        btnIngresar.setFont(new Font("SansSerif", Font.BOLD, 13));
-        btnIngresar.setPreferredSize(new Dimension(130, 36));
-        btnSalir.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        btnSalir.setPreferredSize(new Dimension(100, 36));
-
-        btnIngresar.addActionListener(e -> intentarLogin());
-        btnSalir.addActionListener(e -> System.exit(0));
-
-        getRootPane().setDefaultButton(btnIngresar);
-
-        panelSur.add(btnIngresar);
-        panelSur.add(btnSalir);
-
-        getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(panelNorte, BorderLayout.NORTH);
-        getContentPane().add(panelCentro, BorderLayout.CENTER);
-        getContentPane().add(panelSur, BorderLayout.SOUTH);
-    }
-
-    private void configurarEventos() {
-        cmbTipoAcceso.addActionListener(e -> actualizarEstadoCampos());
     }
 
     private void actualizarEstadoCampos() {
@@ -173,7 +84,155 @@ public class FrmInicio extends JFrame {
         actualizarEstadoCampos();
     }
 
-    public static void main(String[] args) {
+    private void cmbTipoAccesoActionPerformed(java.awt.event.ActionEvent evt) {
+        actualizarEstadoCampos();
+    }
+
+    private void btnIngresarActionPerformed(java.awt.event.ActionEvent evt) {
+        intentarLogin();
+    }
+
+    private void btnSalirActionPerformed(java.awt.event.ActionEvent evt) {
+        System.exit(0);
+    }
+
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        panelNorte = new javax.swing.JPanel();
+        lblTitulo = new javax.swing.JLabel();
+        lblSubtitulo = new javax.swing.JLabel();
+        lblTipoUsuario = new javax.swing.JLabel();
+        cmbTipoAcceso = new javax.swing.JComboBox<>();
+        lblPassword = new javax.swing.JLabel();
+        txtPassword = new javax.swing.JPasswordField();
+        lblHint = new javax.swing.JLabel();
+        btnIngresar = new javax.swing.JButton();
+        btnSalir = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Sistema de Gestión de Ventas - Acceso");
+        setResizable(false);
+
+        panelNorte.setBackground(new java.awt.Color(30, 41, 59));
+
+        lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lblTitulo.setForeground(new java.awt.Color(255, 255, 255));
+        lblTitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblTitulo.setText("SISTEMA DE GESTIÓN DE VENTAS");
+
+        lblSubtitulo.setFont(new java.awt.Font("Segoe UI", 0, 12)); // NOI18N
+        lblSubtitulo.setForeground(new java.awt.Color(148, 163, 184));
+        lblSubtitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblSubtitulo.setText("Seleccione el modo de acceso al sistema");
+
+        javax.swing.GroupLayout panelNorteLayout = new javax.swing.GroupLayout(panelNorte);
+        panelNorte.setLayout(panelNorteLayout);
+        panelNorteLayout.setHorizontalGroup(
+            panelNorteLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(panelNorteLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(panelNorteLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(lblTitulo, javax.swing.GroupLayout.DEFAULT_SIZE, 428, Short.MAX_VALUE)
+                    .addComponent(lblSubtitulo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
+        );
+        panelNorteLayout.setVerticalGroup(
+            panelNorteLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(panelNorteLayout.createSequentialGroup()
+                .addGap(16, 16, 16)
+                .addComponent(lblTitulo)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(lblSubtitulo)
+                .addContainerGap(16, Short.MAX_VALUE))
+        );
+
+        lblTipoUsuario.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblTipoUsuario.setText("Ingresar como:");
+
+        cmbTipoAcceso.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Invitado", "Administrador" }));
+        cmbTipoAcceso.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmbTipoAccesoActionPerformed(evt);
+            }
+        });
+
+        lblPassword.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblPassword.setText("Contraseña:");
+
+        txtPassword.setEnabled(false);
+
+        lblHint.setFont(new java.awt.Font("Segoe UI", 2, 11)); // NOI18N
+        lblHint.setForeground(new java.awt.Color(100, 116, 139));
+        lblHint.setText("Acceso libre al catálogo de productos y órdenes.");
+
+        btnIngresar.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        btnIngresar.setText("Ingresar");
+        btnIngresar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnIngresarActionPerformed(evt);
+            }
+        });
+
+        btnSalir.setFont(new java.awt.Font("Segoe UI", 0, 12)); // NOI18N
+        btnSalir.setText("Salir");
+        btnSalir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSalirActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(panelNorte, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(50, 50, 50)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(lblHint, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(lblTipoUsuario)
+                            .addComponent(lblPassword))
+                        .addGap(25, 25, 25)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(cmbTipoAcceso, 0, 240, Short.MAX_VALUE)
+                            .addComponent(txtPassword))))
+                .addContainerGap(50, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnIngresar, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(btnSalir, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(115, 115, 115))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(panelNorte, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(30, 30, 30)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblTipoUsuario)
+                    .addComponent(cmbTipoAcceso, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblPassword)
+                    .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(lblHint)
+                .addGap(25, 25, 25)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnIngresar, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnSalir, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(30, Short.MAX_VALUE))
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    public static void main(String args[]) {
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -185,4 +244,17 @@ public class FrmInicio extends JFrame {
         }
         java.awt.EventQueue.invokeLater(() -> new FrmInicio(new ContenedorAplicacion()).setVisible(true));
     }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnIngresar;
+    private javax.swing.JButton btnSalir;
+    private javax.swing.JComboBox<String> cmbTipoAcceso;
+    private javax.swing.JLabel lblHint;
+    private javax.swing.JLabel lblPassword;
+    private javax.swing.JLabel lblSubtitulo;
+    private javax.swing.JLabel lblTipoUsuario;
+    private javax.swing.JLabel lblTitulo;
+    private javax.swing.JPanel panelNorte;
+    private javax.swing.JPasswordField txtPassword;
+    // End of variables declaration//GEN-END:variables
 }

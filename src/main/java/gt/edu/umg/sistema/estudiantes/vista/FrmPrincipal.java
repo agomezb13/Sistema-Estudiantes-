@@ -13,14 +13,17 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.WindowConstants;
 
-public class FrmPrincipal extends JFrame {
+public class FrmPrincipal extends javax.swing.JFrame {
 
-    private final JDesktopPane desktopPane;
     private final ContenedorAplicacion contenedor;
     private final String rol;
     private Cliente comprador;
     private FrmEstudiante frmEstudiante;
     private FrmInicio frmInicio;
+
+    public FrmPrincipal() {
+        this(new ContenedorAplicacion(), "ADMIN", null);
+    }
 
     public FrmPrincipal(ContenedorAplicacion contenedor) {
         this(contenedor, "ADMIN", null);
@@ -31,9 +34,9 @@ public class FrmPrincipal extends JFrame {
         this.rol = (rol != null && !rol.trim().isEmpty()) ? rol.toUpperCase() : "ADMIN";
         this.comprador = comprador;
 
+        initComponents();
         actualizarTitulo();
 
-        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setSize(1100, 720);
         setMinimumSize(new Dimension(950, 600));
         setLocationRelativeTo(null);
@@ -44,10 +47,6 @@ public class FrmPrincipal extends JFrame {
                 salirDirecto();
             }
         });
-
-        desktopPane = new JDesktopPane();
-        getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(desktopPane, BorderLayout.CENTER);
 
         setJMenuBar(crearMenuSegunRol());
     }
@@ -296,4 +295,31 @@ public class FrmPrincipal extends JFrame {
         }
         java.awt.EventQueue.invokeLater(() -> new FrmPrincipal(new ContenedorAplicacion()).setVisible(true));
     }
+
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        desktopPane = new javax.swing.JDesktopPane();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
+        setTitle("Sistema de Gestión de Ventas");
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(desktopPane, javax.swing.GroupLayout.DEFAULT_SIZE, 1100, Short.MAX_VALUE)
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(desktopPane, javax.swing.GroupLayout.DEFAULT_SIZE, 720, Short.MAX_VALUE)
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JDesktopPane desktopPane;
+    // End of variables declaration//GEN-END:variables
 }

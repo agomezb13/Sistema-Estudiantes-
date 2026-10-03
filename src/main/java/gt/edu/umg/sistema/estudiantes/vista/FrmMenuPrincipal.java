@@ -46,7 +46,9 @@ public class FrmMenuPrincipal extends javax.swing.JFrame {
     }
 
     @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
+        java.awt.GridBagConstraints gbc;
 
         lblTitulo = new javax.swing.JLabel();
         btnEstudiantes = new javax.swing.JButton();
@@ -56,12 +58,19 @@ public class FrmMenuPrincipal extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Sistema de Gestión");
         setMinimumSize(new java.awt.Dimension(420, 360));
+        getContentPane().setLayout(new java.awt.GridBagLayout());
 
-        lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 24));
+        lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
         lblTitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         lblTitulo.setText("MENÚ PRINCIPAL");
+        gbc = new java.awt.GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbc.insets = new java.awt.Insets(15, 30, 25, 30);
+        getContentPane().add(lblTitulo, gbc);
 
-        btnEstudiantes.setFont(new java.awt.Font("Segoe UI", 0, 18));
+        btnEstudiantes.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
         btnEstudiantes.setText("Gestión de Estudiantes");
         btnEstudiantes.setPreferredSize(new java.awt.Dimension(260, 50));
         btnEstudiantes.addActionListener(new java.awt.event.ActionListener() {
@@ -69,8 +78,14 @@ public class FrmMenuPrincipal extends javax.swing.JFrame {
                 btnEstudiantesActionPerformed(evt);
             }
         });
+        gbc = new java.awt.GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbc.insets = new java.awt.Insets(10, 30, 10, 30);
+        getContentPane().add(btnEstudiantes, gbc);
 
-        btnFacturacion.setFont(new java.awt.Font("Segoe UI", 0, 18));
+        btnFacturacion.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
         btnFacturacion.setText("Módulo de Facturación");
         btnFacturacion.setPreferredSize(new java.awt.Dimension(260, 50));
         btnFacturacion.addActionListener(new java.awt.event.ActionListener() {
@@ -78,8 +93,14 @@ public class FrmMenuPrincipal extends javax.swing.JFrame {
                 btnFacturacionActionPerformed(evt);
             }
         });
+        gbc = new java.awt.GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbc.insets = new java.awt.Insets(10, 30, 15, 30);
+        getContentPane().add(btnFacturacion, gbc);
 
-        btnSalir.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        btnSalir.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         btnSalir.setText("Salir del Sistema");
         btnSalir.setPreferredSize(new java.awt.Dimension(260, 40));
         btnSalir.addActionListener(new java.awt.event.ActionListener() {
@@ -87,31 +108,15 @@ public class FrmMenuPrincipal extends javax.swing.JFrame {
                 btnSalirActionPerformed(evt);
             }
         });
-
-        getContentPane().setLayout(new java.awt.GridBagLayout());
-        java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+        gbc = new java.awt.GridBagConstraints();
         gbc.gridx = 0;
-        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gbc.anchor = java.awt.GridBagConstraints.CENTER;
-
-        gbc.gridy = 0;
-        gbc.insets = new java.awt.Insets(15, 30, 25, 30);
-        getContentPane().add(lblTitulo, gbc);
-
-        gbc.gridy = 1;
-        gbc.insets = new java.awt.Insets(10, 30, 10, 30);
-        getContentPane().add(btnEstudiantes, gbc);
-
-        gbc.gridy = 2;
-        gbc.insets = new java.awt.Insets(10, 30, 15, 30);
-        getContentPane().add(btnFacturacion, gbc);
-
         gbc.gridy = 3;
+        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gbc.insets = new java.awt.Insets(15, 30, 15, 30);
         getContentPane().add(btnSalir, gbc);
 
         pack();
-    }
+    }// </editor-fold>//GEN-END:initComponents
 
     private void btnEstudiantesActionPerformed(java.awt.event.ActionEvent evt) {
         FrmEstudiante frmEst = new FrmEstudiante();
@@ -131,8 +136,10 @@ public class FrmMenuPrincipal extends javax.swing.JFrame {
         System.exit(0);
     }
 
+    // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEstudiantes;
     private javax.swing.JButton btnFacturacion;
     private javax.swing.JButton btnSalir;
     private javax.swing.JLabel lblTitulo;
+    // End of variables declaration//GEN-END:variables
 }
