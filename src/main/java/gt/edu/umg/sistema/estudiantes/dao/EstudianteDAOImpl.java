@@ -23,24 +23,26 @@ public class EstudianteDAOImpl implements EstudianteDAO {
     
     @Override
     public void guardar(Estudiante estudiante) {
-      
-        String sql = "INSERT INTO estudiante (id, nombre, apellido, email,carnet) VALUES (?, ?, ?, ?, ?)";
-                try (Connection conexion = ConexionMySQL.getConnection();
-                PreparedStatement ps = conexion.prepareStatement(sql)) {
+        estudiantes.add(estudiante);
+        Connection conexion = ConexionMySQL.getConnection();
+        if (conexion != null) {
+            String sql = "INSERT INTO estudiante (id, nombres, apellidos, email, carnet) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement ps = conexion.prepareStatement(sql)) {
                 ps.setInt(1, estudiante.getId());
                 ps.setString(2, estudiante.getNombres());
                 ps.setString(3, estudiante.getApellidos());
                 ps.setString(4, estudiante.getEmail());
                 ps.setString(5, estudiante.getCarnet());
-                
                 ps.executeUpdate();
-                
-                System.out.println("Estudiante guardado correctamente");
-                } catch (SQLException e) {
-                        System.out.println("Error al guardar estudiante");
-                        e.printStackTrace();
-                        
-    }
+            } catch (SQLException e) {
+                System.out.println("Error al guardar estudiante en BD: " + e.getMessage());
+            } finally {
+                try {
+                    conexion.close();
+                } catch (SQLException ignored) {
+                }
+            }
+        }
     }
 
     @Override

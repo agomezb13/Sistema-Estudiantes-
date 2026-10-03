@@ -150,88 +150,13 @@ CREATE TABLE IF NOT EXISTS detalle_factura (
     CONSTRAINT fk_detfac_producto FOREIGN KEY (producto_id) REFERENCES producto(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Tabla de compatibilidad para gestión de estudiantes
+-- Tabla para gestion de estudiantes
 CREATE TABLE IF NOT EXISTS estudiante (
     id INT AUTO_INCREMENT PRIMARY KEY,
     carnet VARCHAR(20) NOT NULL UNIQUE,
     nombres VARCHAR(100) NOT NULL,
     apellidos VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
     correo VARCHAR(100),
     telefono VARCHAR(20)
 ) ENGINE=InnoDB;
-
--- ==========================================================
--- Datos de prueba iniciales (Seed Data)
--- ==========================================================
-
--- Categorías
-INSERT INTO categoria (id, nombre, descripcion) VALUES
-(1, 'Laptops y Cómputo', 'Equipos portátiles, componentes y accesorios'),
-(2, 'Monitores y Pantallas', 'Monitores de alta resolución y accesorios'),
-(3, 'Periféricos', 'Teclados, ratones, auriculares y accesorios de entrada')
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
-
--- Productos
-INSERT INTO producto (id, categoria_id, nombre, descripcion, precio, stock, sku) VALUES
-(1, 1, 'Laptop Dell Latitude 5420 Core i7 16GB', 'Laptop profesional para desarrollo y oficina', 8200.00, 15, 'LAP-DELL-5420'),
-(2, 2, 'Monitor LG UltraWide 29 Pulgadas IPS', 'Monitor panorámico Full HD con FreeSync', 2450.00, 20, 'MON-LG-29'),
-(3, 3, 'Teclado Mecánico Logitech G Pro X', 'Switches intercambiables RGB profesional', 850.00, 35, 'TEC-LOGI-GPRO'),
-(4, 3, 'Mouse Inalámbrico Logitech MX Master 3S', 'Sensor óptico de alta precisión para productividad', 780.00, 40, 'MOU-LOGI-MX3S')
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
-
--- Inventario
-INSERT INTO inventario (producto_id, cantidad_disponible, ubicacion) VALUES
-(1, 15, 'Bodega Central - Estante A1'),
-(2, 20, 'Bodega Central - Estante B2'),
-(3, 35, 'Bodega Periféricos - Pasillo 1'),
-(4, 40, 'Bodega Periféricos - Pasillo 1')
-ON DUPLICATE KEY UPDATE cantidad_disponible=VALUES(cantidad_disponible);
-
--- Clientes
-INSERT INTO cliente (id, nombre, correo, telefono, direccion, numero_dpi, nit, estado) VALUES
-(1, 'Juan Pérez Gómez', 'juan.perez@correo.com', '5555-1234', '12 Calle 4-20 Zona 1, Guatemala', '1234567890101', '458923-1', 'ACTIVO'),
-(2, 'María Fernanda López', 'maria.lopez@correo.com', '4444-5678', 'Avenida Las Américas 8-50 Zona 14, Guatemala', '2345678901201', '789123-K', 'ACTIVO'),
-(3, 'Carlos Morales Ruíz', 'carlos.morales@correo.com', '3333-9012', 'Calzada Roosevelt 15-30 Zona 11, Guatemala', '3456789012301', '124578-8', 'ACTIVO')
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
-
--- Direcciones de Envío
-INSERT INTO direccion_envio (id, cliente_id, calle, ciudad, codigo_postal, pais) VALUES
-(1, 1, '12 Calle 4-20 Zona 1', 'Ciudad de Guatemala', '01001', 'Guatemala'),
-(2, 2, 'Avenida Las Américas 8-50 Zona 14', 'Ciudad de Guatemala', '01014', 'Guatemala'),
-(3, 3, 'Calzada Roosevelt 15-30 Zona 11', 'Ciudad de Guatemala', '01011', 'Guatemala')
-ON DUPLICATE KEY UPDATE calle=VALUES(calle);
-
--- Vendedores
-INSERT INTO vendedor (id, nombre, codigo_empleado, departamento, telefono, correo, estado) VALUES
-(1, 'Ana Sofía Rodríguez', 'VEND-001', 'Ventas Corporativas', '5123-4567', 'ana.rodriguez@empresa.com', 'ACTIVO'),
-(2, 'Carlos Roberto Mendoza', 'VEND-002', 'Ventas Minoristas', '5234-5678', 'carlos.mendoza@empresa.com', 'ACTIVO'),
-(3, 'Laura Isabel Castillo', 'VEND-003', 'Atención al Cliente y Mostrador', '5345-6789', 'laura.castillo@empresa.com', 'ACTIVO')
-ON DUPLICATE KEY UPDATE nombre=VALUES(nombre);
-
--- Pedidos iniciales
-INSERT INTO pedido (id, cliente_id, direccion_envio_id, fecha, estado, total) VALUES
-(1, 1, 1, NOW(), 'CONFIRMADO', 10650.00),
-(2, 2, 2, NOW(), 'PENDIENTE', 1630.00)
-ON DUPLICATE KEY UPDATE total=VALUES(total);
-
--- Detalles de Pedido
-INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, precio, subtotal) VALUES
-(1, 1, 1, 8200.00, 8200.00),
-(1, 2, 1, 2450.00, 2450.00),
-(2, 3, 1, 850.00, 850.00),
-(2, 4, 1, 780.00, 780.00);
-
--- Factura inicial
-INSERT INTO factura (id, pedido_id, cliente_id, vendedor_id, numero, fecha_emision, subtotal, impuesto, total, estado) VALUES
-(1, 1, 1, 1, 'FAC-2024-001', NOW(), 10650.00, 1278.00, 11928.00, 'EMITIDA')
-ON DUPLICATE KEY UPDATE numero=VALUES(numero);
-
--- Detalles de Factura
-INSERT INTO detalle_factura (factura_id, producto_id, cantidad, precio_unitario, subtotal) VALUES
-(1, 1, 1, 8200.00, 8200.00),
-(1, 2, 1, 2450.00, 2450.00);
-
--- Pago inicial
-INSERT INTO pago (id, pedido_id, monto, metodo, estado) VALUES
-(1, 1, 10650.00, 'TRANSFERENCIA', 'PAGADO')
-ON DUPLICATE KEY UPDATE monto=VALUES(monto);

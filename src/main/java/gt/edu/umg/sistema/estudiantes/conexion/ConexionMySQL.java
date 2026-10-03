@@ -3,6 +3,7 @@ package gt.edu.umg.sistema.estudiantes.conexion;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class ConexionMySQL {
 
@@ -10,16 +11,27 @@ public class ConexionMySQL {
     private static String puerto = "3306";
     private static String baseDatos = "sistema_ventas";
     private static String user = "root";
-    private static String password = "";
+    private static String password = "199822";
 
     public static Connection getConnection() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             String url = "jdbc:mysql://" + host + ":" + puerto + "/" + baseDatos
                     + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-            return DriverManager.getConnection(url, user, password);
-        } catch (ClassNotFoundException | SQLException e) {
-            System.out.println("Aviso: No se pudo conectar a MySQL (" + e.getMessage() + ")");
+            try {
+                return DriverManager.getConnection(url, user, password);
+            } catch (SQLException ex) {
+                if (!password.isEmpty()) {
+                    try {
+                        return DriverManager.getConnection(url, user, "");
+                    } catch (SQLException ex2) {
+                        // Continuar si no se pudo conectar
+                    }
+                }
+                return null;
+            }
+        } catch (ClassNotFoundException e) {
+            System.out.println("Driver MySQL no encontrado: " + e.getMessage());
             return null;
         }
     }
@@ -29,6 +41,139 @@ public class ConexionMySQL {
             return cn != null && !cn.isClosed();
         } catch (SQLException e) {
             return false;
+        }
+    }
+
+    public static void inicializarBaseDatos() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            String urlServer = "jdbc:mysql://" + host + ":" + puerto
+                    + "/?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+
+            Connection cnServer = null;
+            try {
+                cnServer = DriverManager.getConnection(urlServer, user, password);
+            } catch (SQLException e) {
+                try {
+                    cnServer = DriverManager.getConnection(urlServer, user, "");
+                } catch (SQLException ignored) {
+                }
+            }
+
+            if (cnServer != null) {
+                try (Statement stmt = cnServer.createStatement()) {
+                    stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + baseDatos
+                            + " CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci");
+                }
+                cnServer.close();
+            }
+
+            Connection cnBD = getConnection();
+            if (cnBD != null) {
+                try (Statement stmt = cnBD.createStatement()) {
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS cliente ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "nombre VARCHAR(100) NOT NULL, "
+                            + "correo VARCHAR(100) NOT NULL, "
+                            + "telefono VARCHAR(20), "
+                            + "direccion VARCHAR(255), "
+                            + "numero_dpi VARCHAR(20), "
+                            + "nit VARCHAR(20), "
+                            + "estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO') ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS direccion_envio ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "cliente_id INT NOT NULL, "
+                            + "calle VARCHAR(200) NOT NULL, "
+                            + "ciudad VARCHAR(100) NOT NULL, "
+                            + "codigo_postal VARCHAR(20), "
+                            + "pais VARCHAR(100) NOT NULL) ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS vendedor ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "nombre VARCHAR(100) NOT NULL, "
+                            + "codigo_empleado VARCHAR(50) NOT NULL UNIQUE, "
+                            + "departamento VARCHAR(100), "
+                            + "telefono VARCHAR(20), "
+                            + "correo VARCHAR(100), "
+                            + "estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO') ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS categoria ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "nombre VARCHAR(100) NOT NULL, "
+                            + "descripcion VARCHAR(255)) ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS producto ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "categoria_id INT NOT NULL, "
+                            + "nombre VARCHAR(150) NOT NULL, "
+                            + "descripcion TEXT, "
+                            + "precio DECIMAL(10,2) NOT NULL DEFAULT 0.00, "
+                            + "stock INT NOT NULL DEFAULT 0, "
+                            + "sku VARCHAR(50)) ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS inventario ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "producto_id INT NOT NULL UNIQUE, "
+                            + "cantidad_disponible INT NOT NULL DEFAULT 0, "
+                            + "ubicacion VARCHAR(100)) ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pedido ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "cliente_id INT NOT NULL, "
+                            + "direccion_envio_id INT, "
+                            + "fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                            + "estado VARCHAR(50) NOT NULL DEFAULT 'PENDIENTE', "
+                            + "total DECIMAL(10,2) NOT NULL DEFAULT 0.00) ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS detalle_pedido ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "pedido_id INT NOT NULL, "
+                            + "producto_id INT NOT NULL, "
+                            + "cantidad INT NOT NULL, "
+                            + "precio DECIMAL(10,2) NOT NULL, "
+                            + "subtotal DECIMAL(10,2) NOT NULL) ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pago ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "pedido_id INT NOT NULL, "
+                            + "monto DECIMAL(10,2) NOT NULL, "
+                            + "metodo VARCHAR(50) NOT NULL, "
+                            + "estado VARCHAR(50) NOT NULL DEFAULT 'PENDIENTE') ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS factura ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "pedido_id INT NULL, "
+                            + "cliente_id INT NOT NULL, "
+                            + "vendedor_id INT NOT NULL, "
+                            + "numero VARCHAR(50) NOT NULL UNIQUE, "
+                            + "fecha_emision DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+                            + "subtotal DECIMAL(10,2) NOT NULL DEFAULT 0.00, "
+                            + "impuesto DECIMAL(10,2) NOT NULL DEFAULT 0.00, "
+                            + "total DECIMAL(10,2) NOT NULL DEFAULT 0.00, "
+                            + "estado VARCHAR(50) NOT NULL DEFAULT 'EMITIDA') ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS detalle_factura ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "factura_id INT NOT NULL, "
+                            + "producto_id INT NOT NULL, "
+                            + "cantidad INT NOT NULL, "
+                            + "precio_unitario DECIMAL(10,2) NOT NULL, "
+                            + "subtotal DECIMAL(10,2) NOT NULL) ENGINE=InnoDB");
+
+                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS estudiante ("
+                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                            + "carnet VARCHAR(20) NOT NULL UNIQUE, "
+                            + "nombres VARCHAR(100) NOT NULL, "
+                            + "apellidos VARCHAR(100) NOT NULL, "
+                            + "email VARCHAR(100), "
+                            + "correo VARCHAR(100), "
+                            + "telefono VARCHAR(20)) ENGINE=InnoDB");
+                }
+                cnBD.close();
+            }
+        } catch (Exception e) {
+            System.out.println("Aviso: MySQL no disponible (" + e.getMessage() + ")");
         }
     }
 
@@ -44,19 +189,39 @@ public class ConexionMySQL {
         return host;
     }
 
+    public static void setHost(String nuevoHost) {
+        host = nuevoHost;
+    }
+
     public static String getPuerto() {
         return puerto;
+    }
+
+    public static void setPuerto(String nuevoPuerto) {
+        puerto = nuevoPuerto;
     }
 
     public static String getBaseDatos() {
         return baseDatos;
     }
 
+    public static void setBaseDatos(String nuevaBD) {
+        baseDatos = nuevaBD;
+    }
+
     public static String getUser() {
         return user;
     }
 
+    public static void setUser(String nuevoUser) {
+        user = nuevoUser;
+    }
+
     public static String getPassword() {
         return password;
+    }
+
+    public static void setPassword(String nuevoPassword) {
+        password = nuevoPassword;
     }
 }
