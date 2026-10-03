@@ -5,7 +5,9 @@ import gt.edu.umg.sistema.estudiantes.datos.BaseDatosMemoria;
 import gt.edu.umg.sistema.estudiantes.modelo.Cliente;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,18 +42,54 @@ public class ClienteDAOImpl implements ClienteDAO {
                 ps.executeUpdate();
             } catch (SQLException e) {
                 System.out.println("Aviso al persistir cliente en BD: " + e.getMessage());
+            } finally {
+                try {
+                    cn.close();
+                } catch (SQLException ignored) {
+                }
             }
         }
     }
 
     @Override
     public List<Cliente> listar() {
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn != null) {
+            String sql = "SELECT id, nombre, correo, telefono, direccion, numero_dpi, nit, estado FROM cliente ORDER BY id ASC";
+            try (Statement st = cn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+                List<Cliente> desdeBD = new ArrayList<>();
+                while (rs.next()) {
+                    desdeBD.add(new Cliente(
+                            rs.getInt("id"),
+                            rs.getString("nombre"),
+                            rs.getString("correo"),
+                            rs.getString("telefono"),
+                            rs.getString("direccion"),
+                            rs.getString("numero_dpi"),
+                            rs.getString("nit"),
+                            rs.getString("estado")
+                    ));
+                }
+                if (!desdeBD.isEmpty()) {
+                    db.getClientes().clear();
+                    db.getClientes().addAll(desdeBD);
+                    return desdeBD;
+                }
+            } catch (SQLException e) {
+                System.out.println("Aviso al listar clientes de BD: " + e.getMessage());
+            } finally {
+                try {
+                    cn.close();
+                } catch (SQLException ignored) {
+                }
+            }
+        }
         return new ArrayList<>(db.getClientes());
     }
 
     @Override
     public Cliente buscarPorId(int id) {
-        for (Cliente c : db.getClientes()) {
+        for (Cliente c : listar()) {
             if (c.getId() == id) {
                 return c;
             }
@@ -65,7 +103,7 @@ public class ClienteDAOImpl implements ClienteDAO {
         String nLower = nombre == null ? "" : nombre.toLowerCase();
         String nitLower = nit == null ? "" : nit.toLowerCase();
 
-        for (Cliente c : db.getClientes()) {
+        for (Cliente c : listar()) {
             boolean coincideNit = nitLower.isEmpty() || (c.getNIT() != null && c.getNIT().toLowerCase().contains(nitLower));
             boolean coincideNom = nLower.isEmpty() || (c.getNombre() != null && c.getNombre().toLowerCase().contains(nLower));
             if (coincideNit && coincideNom) {
@@ -77,18 +115,47 @@ public class ClienteDAOImpl implements ClienteDAO {
 
     @Override
     public void actualizar(Cliente cliente) {
-        Cliente actual = buscarPorId(cliente.getId());
+        Cliente actual = null;
+        for (Cliente c : db.getClientes()) {
+            if (c.getId() == cliente.getId()) {
+                actual = c;
+                break;
+            }
+        }
         if (actual == null) {
             db.getClientes().add(cliente);
-            return;
+        } else {
+            actual.setNombre(cliente.getNombre());
+            actual.setCorreo(cliente.getCorreo());
+            actual.setTelefono(cliente.getTelefono());
+            actual.setDireccion(cliente.getDireccion());
+            actual.setNumeroDPI(cliente.getNumeroDPI());
+            actual.setNIT(cliente.getNIT());
+            actual.setEstado(cliente.getEstado());
         }
-        actual.setNombre(cliente.getNombre());
-        actual.setCorreo(cliente.getCorreo());
-        actual.setTelefono(cliente.getTelefono());
-        actual.setDireccion(cliente.getDireccion());
-        actual.setNumeroDPI(cliente.getNumeroDPI());
-        actual.setNIT(cliente.getNIT());
-        actual.setEstado(cliente.getEstado());
+
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn != null) {
+            String sql = "UPDATE cliente SET nombre = ?, correo = ?, telefono = ?, direccion = ?, numero_dpi = ?, nit = ?, estado = ? WHERE id = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setString(1, cliente.getNombre());
+                ps.setString(2, cliente.getCorreo() == null ? "" : cliente.getCorreo());
+                ps.setString(3, cliente.getTelefono() == null ? "" : cliente.getTelefono());
+                ps.setString(4, cliente.getDireccion() == null ? "" : cliente.getDireccion());
+                ps.setString(5, cliente.getNumeroDPI() == null ? "" : cliente.getNumeroDPI());
+                ps.setString(6, cliente.getNIT() == null ? "" : cliente.getNIT());
+                ps.setString(7, cliente.getEstado() == null ? "ACTIVO" : cliente.getEstado());
+                ps.setInt(8, cliente.getId());
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                System.out.println("Aviso al actualizar cliente en BD: " + e.getMessage());
+            } finally {
+                try {
+                    cn.close();
+                } catch (SQLException ignored) {
+                }
+            }
+        }
     }
 
     @Override
@@ -102,6 +169,11 @@ public class ClienteDAOImpl implements ClienteDAO {
                 ps.executeUpdate();
             } catch (SQLException e) {
                 System.out.println("Aviso al eliminar cliente en BD: " + e.getMessage());
+            } finally {
+                try {
+                    cn.close();
+                } catch (SQLException ignored) {
+                }
             }
         }
     }

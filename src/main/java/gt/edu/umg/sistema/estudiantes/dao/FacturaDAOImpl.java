@@ -8,6 +8,7 @@ import gt.edu.umg.sistema.estudiantes.modelo.Factura;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -41,13 +42,22 @@ public class FacturaDAOImpl implements FacturaDAO {
 
         Connection cn = ConexionMySQL.getConnection();
         if (cn != null) {
+            int cId = factura.getClienteId() <= 0 ? 1 : factura.getClienteId();
+            int vId = factura.getVendedorId() <= 0 ? 1 : factura.getVendedorId();
+
+            try (Statement st = cn.createStatement()) {
+                st.executeUpdate("INSERT IGNORE INTO cliente (id, nombre, correo, estado) VALUES (" + cId + ", 'Consumidor Final', 'cf@tienda.com', 'ACTIVO')");
+                st.executeUpdate("INSERT IGNORE INTO vendedor (id, nombre, codigo_empleado, departamento, telefono, correo, estado) VALUES (" + vId + ", 'Administrador', 'VEND-001', 'Ventas', '55555555', 'admin@tienda.com', 'ACTIVO')");
+            } catch (SQLException ignored) {
+            }
+
             String sql = "INSERT INTO factura (id, cliente_id, vendedor_id, numero, subtotal, impuesto, total, estado) "
                     + "VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
                     + "ON DUPLICATE KEY UPDATE subtotal=VALUES(subtotal), impuesto=VALUES(impuesto), total=VALUES(total), estado=VALUES(estado)";
             try (PreparedStatement ps = cn.prepareStatement(sql)) {
                 ps.setInt(1, factura.getId());
-                ps.setInt(2, factura.getClienteId());
-                ps.setInt(3, factura.getVendedorId() <= 0 ? 1 : factura.getVendedorId());
+                ps.setInt(2, cId);
+                ps.setInt(3, vId);
                 ps.setString(4, factura.getNumero() == null ? "FACT-" + factura.getId() : factura.getNumero());
                 ps.setDouble(5, factura.getSubtotal());
                 ps.setDouble(6, factura.getImpuesto());
@@ -56,6 +66,11 @@ public class FacturaDAOImpl implements FacturaDAO {
                 ps.executeUpdate();
             } catch (SQLException e) {
                 System.out.println("Aviso al persistir factura en BD: " + e.getMessage());
+            } finally {
+                try {
+                    cn.close();
+                } catch (SQLException ignored) {
+                }
             }
         }
     }

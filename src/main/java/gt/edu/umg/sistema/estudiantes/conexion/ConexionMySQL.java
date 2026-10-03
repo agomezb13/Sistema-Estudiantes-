@@ -16,7 +16,8 @@ public class ConexionMySQL {
     private static String puerto = "3306";
     private static String baseDatos = "sistema_ventas";
     private static String user = "root";
-    private static String password = "";
+    private static String password = "4147";
+    private static boolean inicializado = false;
 
     private static final String ARCHIVO_PROPIEDADES = "db.properties";
 
@@ -25,19 +26,29 @@ public class ConexionMySQL {
     }
 
     public static void cargarConfiguracion() {
+        Properties props = new Properties();
         File f = new File(ARCHIVO_PROPIEDADES);
         if (f.exists()) {
             try (FileInputStream in = new FileInputStream(f)) {
-                Properties props = new Properties();
                 props.load(in);
-                host = props.getProperty("db.host", host);
-                puerto = props.getProperty("db.port", puerto);
-                baseDatos = props.getProperty("db.name", baseDatos);
-                user = props.getProperty("db.user", user);
-                password = props.getProperty("db.password", password);
             } catch (IOException e) {
                 System.out.println("Aviso al leer " + ARCHIVO_PROPIEDADES + ": " + e.getMessage());
             }
+        } else {
+            try (var stream = ConexionMySQL.class.getClassLoader().getResourceAsStream(ARCHIVO_PROPIEDADES)) {
+                if (stream != null) {
+                    props.load(stream);
+                }
+            } catch (IOException ignored) {
+            }
+        }
+
+        if (!props.isEmpty()) {
+            host = props.getProperty("db.host", host);
+            puerto = props.getProperty("db.port", puerto);
+            baseDatos = props.getProperty("db.name", baseDatos);
+            user = props.getProperty("db.user", user);
+            password = props.getProperty("db.password", password);
         }
     }
 
@@ -63,6 +74,10 @@ public class ConexionMySQL {
     }
 
     public static Connection getConnection() {
+        if (!inicializado) {
+            inicializado = true;
+            inicializarBaseDatos();
+        }
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             String url = "jdbc:mysql://" + host + ":" + puerto + "/" + baseDatos
@@ -104,6 +119,7 @@ public class ConexionMySQL {
     }
 
     public static void inicializarBaseDatos() {
+        inicializado = true;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             String urlServer = "jdbc:mysql://" + host + ":" + puerto
@@ -127,7 +143,17 @@ public class ConexionMySQL {
                 cnServer.close();
             }
 
-            Connection cnBD = getConnection();
+            String urlBD = "jdbc:mysql://" + host + ":" + puerto + "/" + baseDatos
+                    + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+            Connection cnBD = null;
+            try {
+                cnBD = DriverManager.getConnection(urlBD, user, password);
+            } catch (SQLException e) {
+                try {
+                    cnBD = DriverManager.getConnection(urlBD, user, "");
+                } catch (SQLException ignored) {
+                }
+            }
             if (cnBD != null) {
                 try (Statement stmt = cnBD.createStatement()) {
                     stmt.executeUpdate("CREATE TABLE IF NOT EXISTS cliente ("
@@ -240,6 +266,9 @@ public class ConexionMySQL {
                             + "email VARCHAR(100), "
                             + "correo VARCHAR(100), "
                             + "telefono VARCHAR(20)) ENGINE=InnoDB");
+
+                    stmt.executeUpdate("INSERT IGNORE INTO categoria (id, nombre, descripcion) VALUES (1, 'General', 'Categoria General')");
+                    stmt.executeUpdate("INSERT IGNORE INTO vendedor (id, nombre, codigo_empleado, departamento, telefono, correo, estado) VALUES (1, 'Administrador', 'VEND-001', 'Ventas', '55555555', 'admin@tienda.com', 'ACTIVO')");
                 }
                 cnBD.close();
             }
