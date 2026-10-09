@@ -17,11 +17,18 @@ public class PedidoDAOImpl implements PedidoDAO {
 
     @Override
     public void guardar(Pedido pedido) {
-        if (pedido.getId() == 0) {
+        boolean esNuevo = (pedido.getId() <= 0) || (buscarPorId(pedido.getId()) == null);
+
+        if (pedido.getId() <= 0) {
             pedido.setId(db.siguienteIdPedido());
+        }
+
+        if (esNuevo) {
+            db.getPedidos().removeIf(p -> p.getId() == pedido.getId());
             db.getPedidos().add(pedido);
         } else {
             actualizar(pedido);
+            return;
         }
 
         Connection cn = ConexionMySQL.getConnection();

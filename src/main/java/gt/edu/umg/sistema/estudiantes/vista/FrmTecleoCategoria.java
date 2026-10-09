@@ -62,6 +62,7 @@ public class FrmTecleoCategoria extends JInternalFrame {
             return;
         }
         txtId.setText(String.valueOf(actual.getId()));
+        txtId.setEditable(false);
         txtNombre.setText(FormularioHelper.textoSeguro(actual.getNombre()));
         txtDescripcion.setText(FormularioHelper.textoSeguro(actual.getDescripcion()));
     }
@@ -69,6 +70,7 @@ public class FrmTecleoCategoria extends JInternalFrame {
     private void limpiar() {
         actual = null;
         txtId.setText("");
+        txtId.setEditable(true);
         txtNombre.setText("");
         txtDescripcion.setText("");
         txtNombre.requestFocus();
@@ -76,13 +78,39 @@ public class FrmTecleoCategoria extends JInternalFrame {
 
     private void grabar() {
         try {
+            int idIngresado = 0;
+            String txtIdVal = txtId.getText().trim();
+            if (!txtIdVal.isEmpty()) {
+                try {
+                    idIngresado = Integer.parseInt(txtIdVal);
+                    if (idIngresado <= 0) {
+                        JOptionPane.showMessageDialog(this, "El ID debe ser un número entero positivo.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "El ID debe ser un número entero válido.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+
+            if (actual == null && idIngresado > 0) {
+                if (controller.buscarPorId(idIngresado) != null) {
+                    JOptionPane.showMessageDialog(this, "El ID " + idIngresado + " ya existe. Ingrese un ID diferente o déjelo vacío para autogenerar.", "ID Duplicado", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+
             Categoria categoria = actual == null ? new Categoria() : actual;
+            if (actual == null) {
+                categoria.setId(idIngresado);
+            }
             categoria.setNombre(FormularioHelper.texto(txtNombre));
             categoria.setDescripcion(FormularioHelper.texto(txtDescripcion));
 
             controller.guardar(categoria);
             actual = categoria;
             txtId.setText(String.valueOf(categoria.getId()));
+            txtId.setEditable(false);
             JOptionPane.showMessageDialog(this, "Categoría guardada exitosamente.");
             if (alGuardar != null) {
                 alGuardar.run();

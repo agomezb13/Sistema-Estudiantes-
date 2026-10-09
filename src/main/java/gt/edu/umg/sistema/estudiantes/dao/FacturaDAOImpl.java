@@ -7,6 +7,7 @@ import gt.edu.umg.sistema.estudiantes.modelo.Factura;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -19,12 +20,18 @@ public class FacturaDAOImpl implements FacturaDAO {
 
     @Override
     public void guardar(Factura factura) {
-        if (factura.getId() == 0) {
+        boolean esNuevo = (factura.getId() <= 0) || (buscarPorId(factura.getId()) == null);
+
+        if (factura.getId() <= 0) {
             factura.setId(db.siguienteIdFactura());
+        }
+
+        if (esNuevo) {
+            db.getFacturas().removeIf(f -> f.getId() == factura.getId());
             db.getFacturas().add(factura);
         } else {
             Factura actual = buscarPorId(factura.getId());
-            if (actual != null) {
+            if (actual != null && actual != factura) {
                 actual.setNumero(factura.getNumero());
                 actual.setPedidoId(factura.getPedidoId());
                 actual.setClienteId(factura.getClienteId());
@@ -35,8 +42,6 @@ public class FacturaDAOImpl implements FacturaDAO {
                 actual.setTotal(factura.getTotal());
                 actual.setEstado(factura.getEstado());
                 actual.setDetalles(factura.getDetalles());
-            } else {
-                db.getFacturas().add(factura);
             }
         }
 
@@ -77,14 +82,48 @@ public class FacturaDAOImpl implements FacturaDAO {
 
     @Override
     public List<Factura> listar() {
+        if (db.getFacturas().isEmpty()) {
+            db.cargarDatosDesdeBD();
+        }
         return new ArrayList<>(db.getFacturas());
     }
 
     @Override
     public Factura buscarPorId(int id) {
-        for (Factura f : db.getFacturas()) {
+        for (Factura f : listar()) {
             if (f.getId() == id) {
                 return f;
+            }
+        }
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn != null) {
+            String sql = "SELECT id, pedido_id, cliente_id, vendedor_id, numero, fecha_emision, subtotal, impuesto, total, estado FROM factura WHERE id = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        Factura f = new Factura();
+                        f.setId(rs.getInt("id"));
+                        int pedId = rs.getInt("pedido_id");
+                        if (!rs.wasNull()) f.setPedidoId(pedId);
+                        f.setClienteId(rs.getInt("cliente_id"));
+                        f.setVendedorId(rs.getInt("vendedor_id"));
+                        f.setNumero(rs.getString("numero"));
+                        f.setFechaEmision(rs.getTimestamp("fecha_emision"));
+                        f.setSubtotal(rs.getDouble("subtotal"));
+                        f.setImpuesto(rs.getDouble("impuesto"));
+                        f.setTotal(rs.getDouble("total"));
+                        f.setEstado(rs.getString("estado"));
+                        db.getFacturas().add(f);
+                        return f;
+                    }
+                }
+            } catch (SQLException ignored) {
+            } finally {
+                try {
+                    cn.close();
+                } catch (SQLException ignored) {
+                }
             }
         }
         return null;

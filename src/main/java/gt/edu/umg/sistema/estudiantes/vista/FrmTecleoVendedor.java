@@ -67,6 +67,7 @@ public class FrmTecleoVendedor extends JInternalFrame {
             return;
         }
         txtId.setText(String.valueOf(actual.getId()));
+        txtId.setEditable(false);
         txtNombre.setText(FormularioHelper.textoSeguro(actual.getNombre()));
         txtCorreo.setText(FormularioHelper.textoSeguro(actual.getCorreo()));
         txtTelefono.setText(FormularioHelper.textoSeguro(actual.getTelefono()));
@@ -76,6 +77,7 @@ public class FrmTecleoVendedor extends JInternalFrame {
     private void limpiar() {
         actual = null;
         txtId.setText("");
+        txtId.setEditable(true);
         txtNombre.setText("");
         txtCorreo.setText("");
         txtTelefono.setText("");
@@ -85,7 +87,32 @@ public class FrmTecleoVendedor extends JInternalFrame {
 
     private void grabar() {
         try {
+            int idIngresado = 0;
+            String txtIdVal = txtId.getText().trim();
+            if (!txtIdVal.isEmpty()) {
+                try {
+                    idIngresado = Integer.parseInt(txtIdVal);
+                    if (idIngresado <= 0) {
+                        JOptionPane.showMessageDialog(this, "El ID debe ser un número entero positivo.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "El ID debe ser un número entero válido.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+
+            if (actual == null && idIngresado > 0) {
+                if (controller.buscarPorId(idIngresado) != null) {
+                    JOptionPane.showMessageDialog(this, "El ID " + idIngresado + " ya existe. Ingrese un ID diferente o déjelo vacío para autogenerar.", "ID Duplicado", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+
             Vendedor vendedor = actual == null ? new Vendedor() : actual;
+            if (actual == null) {
+                vendedor.setId(idIngresado);
+            }
             vendedor.setNombre(FormularioHelper.texto(txtNombre));
             vendedor.setCorreo(FormularioHelper.texto(txtCorreo));
             vendedor.setTelefono(FormularioHelper.texto(txtTelefono));
@@ -94,6 +121,7 @@ public class FrmTecleoVendedor extends JInternalFrame {
             controller.guardar(vendedor);
             actual = vendedor;
             txtId.setText(String.valueOf(vendedor.getId()));
+            txtId.setEditable(false);
             JOptionPane.showMessageDialog(this, "Vendedor guardado exitosamente.");
             if (alGuardar != null) {
                 alGuardar.run();

@@ -238,6 +238,7 @@ public class FrmTecleoPedido extends JInternalFrame {
         }
 
         txtId.setText(String.valueOf(actual.getId()));
+        txtId.setEditable(false);
         txtFecha.setText(actual.getFecha() != null ? sdf.format(actual.getFecha()) : "");
         cmbEstado.setSelectedItem(actual.getEstado() != null ? actual.getEstado() : "PENDIENTE");
 
@@ -280,6 +281,7 @@ public class FrmTecleoPedido extends JInternalFrame {
     private void limpiar() {
         actual = null;
         txtId.setText("");
+        txtId.setEditable(true);
         txtFecha.setText(sdf.format(new Date()));
         cmbEstado.setSelectedItem("PENDIENTE");
         if (clienteFijo != null) {
@@ -316,8 +318,33 @@ public class FrmTecleoPedido extends JInternalFrame {
             return;
         }
 
+        int idIngresado = 0;
+        String txtIdVal = txtId.getText().trim();
+        if (!txtIdVal.isEmpty()) {
+            try {
+                idIngresado = Integer.parseInt(txtIdVal);
+                if (idIngresado <= 0) {
+                    JOptionPane.showMessageDialog(this, "El ID debe ser un número entero positivo.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "El ID debe ser un número entero válido.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
+        if (actual == null && idIngresado > 0) {
+            if (pedidoController.buscarPorId(idIngresado) != null) {
+                JOptionPane.showMessageDialog(this, "El ID " + idIngresado + " ya existe. Ingrese un ID diferente o déjelo vacío para autogenerar.", "ID Duplicado", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
         try {
             Pedido p = actual == null ? new Pedido() : actual;
+            if (actual == null) {
+                p.setId(idIngresado);
+            }
             p.setClienteId(cli.getId());
 
             DireccionEnvio dir = (DireccionEnvio) cmbDireccion.getSelectedItem();
@@ -329,6 +356,9 @@ public class FrmTecleoPedido extends JInternalFrame {
             p.calcularTotal();
 
             pedidoController.guardar(p);
+            actual = p;
+            txtId.setText(String.valueOf(p.getId()));
+            txtId.setEditable(false);
             JOptionPane.showMessageDialog(this, "Pedido registrado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
 
             if (alGuardar != null) {

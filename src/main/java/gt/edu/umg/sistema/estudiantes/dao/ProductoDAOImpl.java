@@ -17,75 +17,55 @@ public class ProductoDAOImpl implements ProductoDAO {
 
     @Override
     public void guardar(Producto producto) {
-        if (producto.getId() == 0) {
+        boolean esNuevo = (producto.getId() <= 0) || (buscarPorId(producto.getId()) == null);
+
+        if (producto.getId() <= 0) {
             producto.setId(db.siguienteIdProducto());
-            db.getProductos().add(producto);
-        } else {
-            actualizar(producto);
         }
 
-        Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            int catId = producto.getCategoriaId() <= 0 ? 1 : producto.getCategoriaId();
-            try (Statement st = cn.createStatement()) {
-                st.executeUpdate("INSERT IGNORE INTO categoria (id, nombre, descripcion) VALUES (" + catId + ", 'General', 'Categoria General')");
-            } catch (SQLException ignored) {
-            }
+        if (esNuevo) {
+            db.getProductos().removeIf(p -> p.getId() == producto.getId());
+            db.getProductos().add(producto);
 
-            String sql = "INSERT INTO producto (id, categoria_id, nombre, descripcion, precio, stock, sku) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?) "
-                    + "ON DUPLICATE KEY UPDATE categoria_id=VALUES(categoria_id), nombre=VALUES(nombre), "
-                    + "descripcion=VALUES(descripcion), precio=VALUES(precio), stock=VALUES(stock), sku=VALUES(sku)";
-            try (PreparedStatement ps = cn.prepareStatement(sql)) {
-                ps.setInt(1, producto.getId());
-                ps.setInt(2, catId);
-                ps.setString(3, producto.getNombre());
-                ps.setString(4, producto.getDescripcion() == null ? "" : producto.getDescripcion());
-                ps.setDouble(5, producto.getPrecio());
-                ps.setInt(6, producto.getExistencias());
-                ps.setString(7, "PROD-" + producto.getId());
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                System.out.println("Aviso al persistir producto en BD: " + e.getMessage());
-            } finally {
-                try {
-                    cn.close();
+            Connection cn = ConexionMySQL.getConnection();
+            if (cn != null) {
+                int catId = producto.getCategoriaId() <= 0 ? 1 : producto.getCategoriaId();
+                try (Statement st = cn.createStatement()) {
+                    st.executeUpdate("INSERT IGNORE INTO categoria (id, nombre, descripcion) VALUES (" + catId + ", 'General', 'Categoria General')");
                 } catch (SQLException ignored) {
                 }
+
+                String sql = "INSERT INTO producto (id, categoria_id, nombre, descripcion, precio, stock, sku) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?) "
+                        + "ON DUPLICATE KEY UPDATE categoria_id=VALUES(categoria_id), nombre=VALUES(nombre), "
+                        + "descripcion=VALUES(descripcion), precio=VALUES(precio), stock=VALUES(stock), sku=VALUES(sku)";
+                try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                    ps.setInt(1, producto.getId());
+                    ps.setInt(2, catId);
+                    ps.setString(3, producto.getNombre());
+                    ps.setString(4, producto.getDescripcion() == null ? "" : producto.getDescripcion());
+                    ps.setDouble(5, producto.getPrecio());
+                    ps.setInt(6, producto.getExistencias());
+                    ps.setString(7, "PROD-" + producto.getId());
+                    ps.executeUpdate();
+                } catch (SQLException e) {
+                    System.out.println("Aviso al persistir producto en BD: " + e.getMessage());
+                } finally {
+                    try {
+                        cn.close();
+                    } catch (SQLException ignored) {
+                    }
+                }
             }
+        } else {
+            actualizar(producto);
         }
     }
 
     @Override
     public List<Producto> listar() {
-        Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            String sql = "SELECT id, categoria_id, nombre, descripcion, precio, stock FROM producto ORDER BY id ASC";
-            try (Statement st = cn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                List<Producto> desdeBD = new ArrayList<>();
-                while (rs.next()) {
-                    desdeBD.add(new Producto(
-                            rs.getInt("id"),
-                            rs.getInt("categoria_id"),
-                            rs.getString("nombre"),
-                            rs.getString("descripcion"),
-                            rs.getDouble("precio"),
-                            rs.getInt("stock")
-                    ));
-                }
-                if (!desdeBD.isEmpty()) {
-                    db.getProductos().clear();
-                    db.getProductos().addAll(desdeBD);
-                    return desdeBD;
-                }
-            } catch (SQLException e) {
-                System.out.println("Aviso al listar productos de BD: " + e.getMessage());
-            } finally {
-                try {
-                    cn.close();
-                } catch (SQLException ignored) {
-                }
-            }
+        if (db.getProductos().isEmpty()) {
+            db.cargarDatosDesdeBD();
         }
         return new ArrayList<>(db.getProductos());
     }
@@ -95,6 +75,33 @@ public class ProductoDAOImpl implements ProductoDAO {
         for (Producto p : listar()) {
             if (p.getId() == id) {
                 return p;
+            }
+        }
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn != null) {
+            String sql = "SELECT id, categoria_id, nombre, descripcion, precio, stock FROM producto WHERE id = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        Producto prod = new Producto(
+                                rs.getInt("id"),
+                                rs.getInt("categoria_id"),
+                                rs.getString("nombre"),
+                                rs.getString("descripcion"),
+                                rs.getDouble("precio"),
+                                rs.getInt("stock")
+                        );
+                        db.getProductos().add(prod);
+                        return prod;
+                    }
+                }
+            } catch (SQLException ignored) {
+            } finally {
+                try {
+                    cn.close();
+                } catch (SQLException ignored) {
+                }
             }
         }
         return null;

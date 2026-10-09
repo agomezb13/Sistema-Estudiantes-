@@ -94,6 +94,7 @@ public class FrmTecleoPago extends JInternalFrame {
         }
 
         txtId.setText(String.valueOf(actual.getId()));
+        txtId.setEditable(false);
         txtMonto.setText(String.format("%.2f", actual.getMonto()));
         cmbMetodo.setSelectedItem(actual.getMetodo() != null ? actual.getMetodo() : "EFECTIVO");
         cmbEstado.setSelectedItem(actual.getEstado() != null ? actual.getEstado() : "PENDIENTE");
@@ -110,6 +111,7 @@ public class FrmTecleoPago extends JInternalFrame {
     private void limpiar() {
         actual = null;
         txtId.setText("");
+        txtId.setEditable(true);
         txtMonto.setText("");
         cmbMetodo.setSelectedIndex(0);
         cmbEstado.setSelectedItem("PENDIENTE");
@@ -123,6 +125,28 @@ public class FrmTecleoPago extends JInternalFrame {
         if (ped == null) {
             JOptionPane.showMessageDialog(this, "Debe seleccionar un pedido para asociar el pago.", "Validación", JOptionPane.WARNING_MESSAGE);
             return;
+        }
+
+        int idIngresado = 0;
+        String txtIdVal = txtId.getText().trim();
+        if (!txtIdVal.isEmpty()) {
+            try {
+                idIngresado = Integer.parseInt(txtIdVal);
+                if (idIngresado <= 0) {
+                    JOptionPane.showMessageDialog(this, "El ID debe ser un número entero positivo.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "El ID debe ser un número entero válido.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
+        if (actual == null && idIngresado > 0) {
+            if (pagoController.buscarPorId(idIngresado) != null) {
+                JOptionPane.showMessageDialog(this, "El ID " + idIngresado + " ya existe. Ingrese un ID diferente o déjelo vacío para autogenerar.", "ID Duplicado", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
 
         double monto;
@@ -139,12 +163,18 @@ public class FrmTecleoPago extends JInternalFrame {
 
         try {
             Pago p = actual == null ? new Pago() : actual;
+            if (actual == null) {
+                p.setId(idIngresado);
+            }
             p.setPedidoId(ped.getId());
             p.setMonto(monto);
             p.setMetodo((String) cmbMetodo.getSelectedItem());
             p.setEstado((String) cmbEstado.getSelectedItem());
 
             pagoController.guardar(p);
+            actual = p;
+            txtId.setText(String.valueOf(p.getId()));
+            txtId.setEditable(false);
             JOptionPane.showMessageDialog(this, "Pago guardado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
 
             if (alGuardar != null) {

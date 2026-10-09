@@ -75,6 +75,7 @@ public class FrmTecleoProducto extends JInternalFrame {
             return;
         }
         txtId.setText(String.valueOf(actual.getId()));
+        txtId.setEditable(false);
         txtNombre.setText(FormularioHelper.textoSeguro(actual.getNombre()));
         txtPrecio.setText(String.format("%.2f", actual.getPrecio()).replace(",", "."));
         txtExistencias.setText(String.valueOf(actual.getExistencias()));
@@ -92,6 +93,7 @@ public class FrmTecleoProducto extends JInternalFrame {
     private void limpiar() {
         actual = null;
         txtId.setText("");
+        txtId.setEditable(true);
         txtNombre.setText("");
         cmbCategoria.setSelectedItem(null);
         txtPrecio.setText("");
@@ -108,10 +110,35 @@ public class FrmTecleoProducto extends JInternalFrame {
                 return;
             }
 
+            int idIngresado = 0;
+            String txtIdVal = txtId.getText().trim();
+            if (!txtIdVal.isEmpty()) {
+                try {
+                    idIngresado = Integer.parseInt(txtIdVal);
+                    if (idIngresado <= 0) {
+                        JOptionPane.showMessageDialog(this, "El ID debe ser un número entero positivo.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "El ID debe ser un número entero válido.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+
+            if (actual == null && idIngresado > 0) {
+                if (productoController.buscarPorId(idIngresado) != null) {
+                    JOptionPane.showMessageDialog(this, "El ID " + idIngresado + " ya existe. Ingrese un ID diferente o déjelo vacío para autogenerar.", "ID Duplicado", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+
             double precio = Double.parseDouble(FormularioHelper.texto(txtPrecio).replace(",", "."));
             int stock = Integer.parseInt(FormularioHelper.texto(txtExistencias));
 
             Producto producto = actual == null ? new Producto() : actual;
+            if (actual == null) {
+                producto.setId(idIngresado);
+            }
             producto.setNombre(FormularioHelper.texto(txtNombre));
             producto.setCategoriaId(cat.getId());
             producto.setPrecio(precio);
@@ -121,6 +148,7 @@ public class FrmTecleoProducto extends JInternalFrame {
             productoController.guardar(producto);
             actual = producto;
             txtId.setText(String.valueOf(producto.getId()));
+            txtId.setEditable(false);
             JOptionPane.showMessageDialog(this, "Producto guardado exitosamente.");
             if (alGuardar != null) {
                 alGuardar.run();

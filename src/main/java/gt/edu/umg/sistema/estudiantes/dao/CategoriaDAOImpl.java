@@ -17,56 +17,43 @@ public class CategoriaDAOImpl implements CategoriaDAO {
 
     @Override
     public void guardar(Categoria categoria) {
-        if (categoria.getId() == 0) {
+        boolean esNuevo = (categoria.getId() <= 0) || (buscarPorId(categoria.getId()) == null);
+
+        if (categoria.getId() <= 0) {
             categoria.setId(db.siguienteIdCategoria());
-            db.getCategorias().add(categoria);
-        } else {
-            actualizar(categoria);
         }
 
-        Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            String sql = "INSERT INTO categoria (id, nombre, descripcion) VALUES (?, ?, ?) "
-                    + "ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), descripcion=VALUES(descripcion)";
-            try (PreparedStatement ps = cn.prepareStatement(sql)) {
-                ps.setInt(1, categoria.getId());
-                ps.setString(2, categoria.getNombre());
-                ps.setString(3, categoria.getDescripcion() == null ? "" : categoria.getDescripcion());
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                System.out.println("Aviso al persistir categoria en BD: " + e.getMessage());
-            } finally {
-                try {
-                    cn.close();
-                } catch (SQLException ignored) {
+        if (esNuevo) {
+            db.getCategorias().removeIf(c -> c.getId() == categoria.getId());
+            db.getCategorias().add(categoria);
+
+            Connection cn = ConexionMySQL.getConnection();
+            if (cn != null) {
+                String sql = "INSERT INTO categoria (id, nombre, descripcion) VALUES (?, ?, ?) "
+                        + "ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), descripcion=VALUES(descripcion)";
+                try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                    ps.setInt(1, categoria.getId());
+                    ps.setString(2, categoria.getNombre());
+                    ps.setString(3, categoria.getDescripcion() == null ? "" : categoria.getDescripcion());
+                    ps.executeUpdate();
+                } catch (SQLException e) {
+                    System.out.println("Aviso al persistir categoria en BD: " + e.getMessage());
+                } finally {
+                    try {
+                        cn.close();
+                    } catch (SQLException ignored) {
+                    }
                 }
             }
+        } else {
+            actualizar(categoria);
         }
     }
 
     @Override
     public List<Categoria> listar() {
-        Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            String sql = "SELECT id, nombre, descripcion FROM categoria ORDER BY id ASC";
-            try (Statement st = cn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                List<Categoria> desdeBD = new ArrayList<>();
-                while (rs.next()) {
-                    desdeBD.add(new Categoria(rs.getInt("id"), rs.getString("nombre"), rs.getString("descripcion")));
-                }
-                if (!desdeBD.isEmpty()) {
-                    db.getCategorias().clear();
-                    db.getCategorias().addAll(desdeBD);
-                    return desdeBD;
-                }
-            } catch (SQLException e) {
-                System.out.println("Aviso al listar categorias de BD: " + e.getMessage());
-            } finally {
-                try {
-                    cn.close();
-                } catch (SQLException ignored) {
-                }
-            }
+        if (db.getCategorias().isEmpty()) {
+            db.cargarDatosDesdeBD();
         }
         return new ArrayList<>(db.getCategorias());
     }
@@ -76,6 +63,26 @@ public class CategoriaDAOImpl implements CategoriaDAO {
         for (Categoria c : listar()) {
             if (c.getId() == id) {
                 return c;
+            }
+        }
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn != null) {
+            String sql = "SELECT id, nombre, descripcion FROM categoria WHERE id = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        Categoria cat = new Categoria(rs.getInt("id"), rs.getString("nombre"), rs.getString("descripcion"));
+                        db.getCategorias().add(cat);
+                        return cat;
+                    }
+                }
+            } catch (SQLException ignored) {
+            } finally {
+                try {
+                    cn.close();
+                } catch (SQLException ignored) {
+                }
             }
         }
         return null;

@@ -277,6 +277,7 @@ public class FrmTecleoFactura extends JInternalFrame {
         }
 
         txtId.setText(String.valueOf(actual.getId()));
+        txtId.setEditable(false);
         txtNumero.setText(FormularioHelper.textoSeguro(actual.getNumero()));
         txtFechaEmision.setText(actual.getFechaEmision() != null ? sdf.format(actual.getFechaEmision()) : "");
         cmbEstado.setSelectedItem(actual.getEstado() != null ? actual.getEstado() : "EMITIDA");
@@ -327,6 +328,7 @@ public class FrmTecleoFactura extends JInternalFrame {
     private void limpiar() {
         actual = null;
         txtId.setText("");
+        txtId.setEditable(true);
         txtNumero.setText("FAC-" + System.currentTimeMillis() % 100000);
         txtFechaEmision.setText(sdf.format(new Date()));
         cmbEstado.setSelectedItem("EMITIDA");
@@ -373,8 +375,33 @@ public class FrmTecleoFactura extends JInternalFrame {
             return;
         }
 
+        int idIngresado = 0;
+        String txtIdVal = txtId.getText().trim();
+        if (!txtIdVal.isEmpty()) {
+            try {
+                idIngresado = Integer.parseInt(txtIdVal);
+                if (idIngresado <= 0) {
+                    JOptionPane.showMessageDialog(this, "El ID debe ser un número entero positivo.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "El ID debe ser un número entero válido.", "ID Inválido", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
+        if (actual == null && idIngresado > 0) {
+            if (facturaController.buscarPorId(idIngresado) != null) {
+                JOptionPane.showMessageDialog(this, "El ID " + idIngresado + " ya existe. Ingrese un ID diferente o déjelo vacío para autogenerar.", "ID Duplicado", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
         try {
             Factura f = actual == null ? new Factura() : actual;
+            if (actual == null) {
+                f.setId(idIngresado);
+            }
             f.setNumero(num);
             f.setClienteId(cli.getId());
 
@@ -390,6 +417,9 @@ public class FrmTecleoFactura extends JInternalFrame {
             f.calcularTotal();
 
             facturaController.guardar(f);
+            actual = f;
+            txtId.setText(String.valueOf(f.getId()));
+            txtId.setEditable(false);
             JOptionPane.showMessageDialog(this, "Factura guardada correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
 
             if (alGuardar != null) {

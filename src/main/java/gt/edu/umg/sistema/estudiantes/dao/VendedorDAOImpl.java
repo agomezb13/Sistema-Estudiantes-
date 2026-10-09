@@ -17,68 +17,49 @@ public class VendedorDAOImpl implements VendedorDAO {
 
     @Override
     public void guardar(Vendedor vendedor) {
-        if (vendedor.getId() == 0) {
+        boolean esNuevo = (vendedor.getId() <= 0) || (buscarPorId(vendedor.getId()) == null);
+
+        if (vendedor.getId() <= 0) {
             vendedor.setId(db.siguienteIdVendedor());
-            db.getVendedores().add(vendedor);
-        } else {
-            actualizar(vendedor);
         }
 
-        Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            String sql = "INSERT INTO vendedor (id, nombre, codigo_empleado, departamento, telefono, correo, estado) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?) "
-                    + "ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), departamento=VALUES(departamento), "
-                    + "telefono=VALUES(telefono), correo=VALUES(correo), estado=VALUES(estado)";
-            try (PreparedStatement ps = cn.prepareStatement(sql)) {
-                ps.setInt(1, vendedor.getId());
-                ps.setString(2, vendedor.getNombre());
-                ps.setString(3, "VEND-" + String.format("%03d", vendedor.getId()));
-                ps.setString(4, "Ventas");
-                ps.setString(5, vendedor.getTelefono() == null ? "" : vendedor.getTelefono());
-                ps.setString(6, vendedor.getCorreo() == null ? "" : vendedor.getCorreo());
-                ps.setString(7, vendedor.getEstado() == null ? "ACTIVO" : vendedor.getEstado());
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                System.out.println("Aviso al persistir vendedor en BD: " + e.getMessage());
-            } finally {
-                try {
-                    cn.close();
-                } catch (SQLException ignored) {
+        if (esNuevo) {
+            db.getVendedores().removeIf(v -> v.getId() == vendedor.getId());
+            db.getVendedores().add(vendedor);
+
+            Connection cn = ConexionMySQL.getConnection();
+            if (cn != null) {
+                String sql = "INSERT INTO vendedor (id, nombre, codigo_empleado, departamento, telefono, correo, estado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?) "
+                        + "ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), departamento=VALUES(departamento), "
+                        + "telefono=VALUES(telefono), correo=VALUES(correo), estado=VALUES(estado)";
+                try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                    ps.setInt(1, vendedor.getId());
+                    ps.setString(2, vendedor.getNombre());
+                    ps.setString(3, "VEND-" + String.format("%03d", vendedor.getId()));
+                    ps.setString(4, "Ventas");
+                    ps.setString(5, vendedor.getTelefono() == null ? "" : vendedor.getTelefono());
+                    ps.setString(6, vendedor.getCorreo() == null ? "" : vendedor.getCorreo());
+                    ps.setString(7, vendedor.getEstado() == null ? "ACTIVO" : vendedor.getEstado());
+                    ps.executeUpdate();
+                } catch (SQLException e) {
+                    System.out.println("Aviso al persistir vendedor en BD: " + e.getMessage());
+                } finally {
+                    try {
+                        cn.close();
+                    } catch (SQLException ignored) {
+                    }
                 }
             }
+        } else {
+            actualizar(vendedor);
         }
     }
 
     @Override
     public List<Vendedor> listar() {
-        Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            String sql = "SELECT id, nombre, telefono, correo, estado FROM vendedor ORDER BY id ASC";
-            try (Statement st = cn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-                List<Vendedor> desdeBD = new ArrayList<>();
-                while (rs.next()) {
-                    desdeBD.add(new Vendedor(
-                            rs.getInt("id"),
-                            rs.getString("nombre"),
-                            rs.getString("correo"),
-                            rs.getString("telefono"),
-                            rs.getString("estado")
-                    ));
-                }
-                if (!desdeBD.isEmpty()) {
-                    db.getVendedores().clear();
-                    db.getVendedores().addAll(desdeBD);
-                    return desdeBD;
-                }
-            } catch (SQLException e) {
-                System.out.println("Aviso al listar vendedores de BD: " + e.getMessage());
-            } finally {
-                try {
-                    cn.close();
-                } catch (SQLException ignored) {
-                }
-            }
+        if (db.getVendedores().isEmpty()) {
+            db.cargarDatosDesdeBD();
         }
         return new ArrayList<>(db.getVendedores());
     }
@@ -88,6 +69,32 @@ public class VendedorDAOImpl implements VendedorDAO {
         for (Vendedor v : listar()) {
             if (v.getId() == id) {
                 return v;
+            }
+        }
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn != null) {
+            String sql = "SELECT id, nombre, correo, telefono, estado FROM vendedor WHERE id = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        Vendedor vend = new Vendedor(
+                                rs.getInt("id"),
+                                rs.getString("nombre"),
+                                rs.getString("correo"),
+                                rs.getString("telefono"),
+                                rs.getString("estado")
+                        );
+                        db.getVendedores().add(vend);
+                        return vend;
+                    }
+                }
+            } catch (SQLException ignored) {
+            } finally {
+                try {
+                    cn.close();
+                } catch (SQLException ignored) {
+                }
             }
         }
         return null;
