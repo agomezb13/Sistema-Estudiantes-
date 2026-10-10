@@ -97,15 +97,7 @@ public class FrmPrincipal extends javax.swing.JFrame {
         JMenuBar menuBar = new JMenuBar();
 
         JMenu menuOrdenes = new JMenu("Órdenes de Compra");
-        JMenuItem itemMisOrdenes = new JMenuItem("Consultar Órdenes de Compra");
         JMenuItem itemHacerOrden = new JMenuItem("Hacer Nueva Orden de Compra");
-
-        itemMisOrdenes.addActionListener(e -> abrirFormulario(new FrmFiltroPedido(
-                pedidoController,
-                clienteController,
-                productoController,
-                direccionEnvioController,
-                comprador)));
 
         itemHacerOrden.addActionListener(e -> abrirFormulario(new FrmTecleoPedido(
                 pedidoController,
@@ -114,9 +106,9 @@ public class FrmPrincipal extends javax.swing.JFrame {
                 direccionEnvioController,
                 null,
                 null,
-                comprador)));
+                null,
+                true)));
 
-        menuOrdenes.add(itemMisOrdenes);
         menuOrdenes.add(itemHacerOrden);
 
         JMenu menuStock = new JMenu("Stock de Productos");

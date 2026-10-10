@@ -101,6 +101,10 @@ public class FrmFiltroPedido extends FrmFiltroBase {
 
     @Override
     protected void eliminar() {
+        if (clienteFijo != null) {
+            javax.swing.JOptionPane.showMessageDialog(this, "No tiene permisos para eliminar pedidos.", "Acceso Denegado", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         int id = idSeleccionadoInt();
         if (id < 0 || !confirmarEliminar()) {
             return;

@@ -60,17 +60,27 @@ public class FrmTecleoPedido extends JInternalFrame {
     private final List<DetallePedido> detallesLocales = new ArrayList<>();
 
     private final Cliente clienteFijo;
+    private final boolean esModoInvitado;
+    private final JTextField txtNombreInvitado = new JTextField(20);
+    private final JTextField txtDireccionInvitado = new JTextField(25);
+    private final JTextField txtTelefonoInvitado = new JTextField(12);
 
     public FrmTecleoPedido(PedidoController pedidoController, ClienteController clienteController,
                             ProductoController productoController, DireccionEnvioController direccionController,
                             Pedido pedido, Runnable alGuardar) {
-        this(pedidoController, clienteController, productoController, direccionController, pedido, alGuardar, null);
+        this(pedidoController, clienteController, productoController, direccionController, pedido, alGuardar, null, false);
     }
 
     public FrmTecleoPedido(PedidoController pedidoController, ClienteController clienteController,
                             ProductoController productoController, DireccionEnvioController direccionController,
                             Pedido pedido, Runnable alGuardar, Cliente clienteFijo) {
-        super(clienteFijo != null ? "Orden de Compra - Registro" : "Pedido - Registro / Edición", true, true, true, true);
+        this(pedidoController, clienteController, productoController, direccionController, pedido, alGuardar, clienteFijo, false);
+    }
+
+    public FrmTecleoPedido(PedidoController pedidoController, ClienteController clienteController,
+                            ProductoController productoController, DireccionEnvioController direccionController,
+                            Pedido pedido, Runnable alGuardar, Cliente clienteFijo, boolean esModoInvitado) {
+        super(esModoInvitado ? "Nueva Orden de Compra" : (clienteFijo != null ? "Orden de Compra - Registro" : "Pedido - Registro / Edición"), true, true, true, true);
         this.pedidoController = pedidoController;
         this.clienteController = clienteController;
         this.productoController = productoController;
@@ -78,8 +88,9 @@ public class FrmTecleoPedido extends JInternalFrame {
         this.actual = pedido;
         this.alGuardar = alGuardar;
         this.clienteFijo = clienteFijo;
+        this.esModoInvitado = esModoInvitado;
 
-        setSize(720, 560);
+        setSize(740, 580);
         setLocation(60, 30);
 
         this.cmbCliente = FormularioHelper.comboConOpcionVacia(clienteController.listar(), "-- Seleccione Cliente --");
@@ -123,12 +134,23 @@ public class FrmTecleoPedido extends JInternalFrame {
 
     private void construirInterfaz() {
         JPanel panelCabecera = new JPanel(new GridBagLayout());
-        panelCabecera.setBorder(BorderFactory.createTitledBorder("Datos Generales del Pedido"));
-        FormularioHelper.agregarCampo(panelCabecera, 0, "No. Pedido:", txtId);
-        FormularioHelper.agregarCampo(panelCabecera, 1, "Cliente:", cmbCliente);
-        FormularioHelper.agregarCampo(panelCabecera, 2, "Dirección Envío:", cmbDireccion);
-        FormularioHelper.agregarCampo(panelCabecera, 3, "Fecha:", txtFecha);
-        FormularioHelper.agregarCampo(panelCabecera, 4, "Estado:", cmbEstado);
+        if (esModoInvitado) {
+            panelCabecera.setBorder(BorderFactory.createTitledBorder("Datos del Comprador"));
+            txtId.setText("(Autogenerado)");
+            txtId.setEditable(false);
+            FormularioHelper.agregarCampo(panelCabecera, 0, "No. Orden:", txtId);
+            FormularioHelper.agregarCampo(panelCabecera, 1, "Tu Nombre:", txtNombreInvitado);
+            FormularioHelper.agregarCampo(panelCabecera, 2, "Dirección de Entrega:", txtDireccionInvitado);
+            FormularioHelper.agregarCampo(panelCabecera, 3, "Teléfono / Contacto:", txtTelefonoInvitado);
+            FormularioHelper.agregarCampo(panelCabecera, 4, "Fecha:", txtFecha);
+        } else {
+            panelCabecera.setBorder(BorderFactory.createTitledBorder("Datos Generales del Pedido"));
+            FormularioHelper.agregarCampo(panelCabecera, 0, "No. Pedido:", txtId);
+            FormularioHelper.agregarCampo(panelCabecera, 1, "Cliente:", cmbCliente);
+            FormularioHelper.agregarCampo(panelCabecera, 2, "Dirección Envío:", cmbDireccion);
+            FormularioHelper.agregarCampo(panelCabecera, 3, "Fecha:", txtFecha);
+            FormularioHelper.agregarCampo(panelCabecera, 4, "Estado:", cmbEstado);
+        }
 
         JPanel panelAgregarItem = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         panelAgregarItem.setBorder(BorderFactory.createTitledBorder("Agregar Ítems"));
@@ -160,9 +182,9 @@ public class FrmTecleoPedido extends JInternalFrame {
         panelCentro.add(panelTotal, BorderLayout.SOUTH);
 
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton btnGrabar = new JButton("Grabar Pedido");
-        JButton btnNuevo = new JButton("Nuevo");
-        JButton btnCancelar = new JButton("Cancelar");
+        JButton btnGrabar = new JButton(esModoInvitado ? "Enviar Orden de Compra" : "Grabar Pedido");
+        JButton btnNuevo = new JButton(esModoInvitado ? "Limpiar Campos" : "Nuevo");
+        JButton btnCancelar = new JButton(esModoInvitado ? "Cerrar" : "Cancelar");
 
         btnGrabar.addActionListener(e -> grabar());
         btnNuevo.addActionListener(e -> limpiar());
@@ -300,26 +322,35 @@ public class FrmTecleoPedido extends JInternalFrame {
 
     private void limpiar() {
         actual = null;
-        txtId.setText("");
-        txtId.setEditable(true);
-        txtFecha.setText(sdf.format(new Date()));
-        cmbEstado.setSelectedItem("PENDIENTE");
-        if (clienteFijo != null) {
-            for (int i = 0; i < cmbCliente.getItemCount(); i++) {
-                Cliente c = cmbCliente.getItemAt(i);
-                if (c != null && c.getId() == clienteFijo.getId()) {
-                    cmbCliente.setSelectedIndex(i);
-                    break;
+        if (esModoInvitado) {
+            txtId.setText("(Autogenerado)");
+            txtId.setEditable(false);
+            txtNombreInvitado.setText("");
+            txtDireccionInvitado.setText("");
+            txtTelefonoInvitado.setText("");
+            cmbEstado.setSelectedItem("PENDIENTE");
+        } else {
+            txtId.setText("");
+            txtId.setEditable(true);
+            cmbEstado.setSelectedItem("PENDIENTE");
+            if (clienteFijo != null) {
+                for (int i = 0; i < cmbCliente.getItemCount(); i++) {
+                    Cliente c = cmbCliente.getItemAt(i);
+                    if (c != null && c.getId() == clienteFijo.getId()) {
+                        cmbCliente.setSelectedIndex(i);
+                        break;
+                    }
                 }
+                cmbCliente.setEnabled(false);
+                actualizarDireccionesCliente();
+            } else if (cmbCliente.getItemCount() > 0) {
+                cmbCliente.setSelectedIndex(0);
             }
-            cmbCliente.setEnabled(false);
-            actualizarDireccionesCliente();
-        } else if (cmbCliente.getItemCount() > 0) {
-            cmbCliente.setSelectedIndex(0);
+            if (clienteFijo == null) {
+                cmbDireccion.removeAllItems();
+            }
         }
-        if (clienteFijo == null) {
-            cmbDireccion.removeAllItems();
-        }
+        txtFecha.setText(sdf.format(new Date()));
         detallesLocales.clear();
         modeloDetalle.setRowCount(0);
         recalcularTotal();
@@ -327,6 +358,86 @@ public class FrmTecleoPedido extends JInternalFrame {
     }
 
     private void grabar() {
+        if (esModoInvitado) {
+            String nombre = txtNombreInvitado.getText().trim();
+            if (nombre.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Debe ingresar su nombre para generar la orden.", "Validación", JOptionPane.WARNING_MESSAGE);
+                txtNombreInvitado.requestFocus();
+                return;
+            }
+
+            String direccion = txtDireccionInvitado.getText().trim();
+            if (direccion.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Debe ingresar su dirección de entrega.", "Validación", JOptionPane.WARNING_MESSAGE);
+                txtDireccionInvitado.requestFocus();
+                return;
+            }
+
+            if (detallesLocales.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Debe agregar al menos un producto a la orden de compra.", "Validación", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            String telefono = txtTelefonoInvitado.getText().trim();
+
+            try {
+                Cliente cli = null;
+                for (Cliente c : clienteController.listar()) {
+                    if (c.getNombre() != null && c.getNombre().equalsIgnoreCase(nombre)) {
+                        cli = c;
+                        break;
+                    }
+                }
+                if (cli == null) {
+                    cli = new Cliente();
+                    cli.setNombre(nombre);
+                    cli.setCorreo(nombre.toLowerCase().replaceAll("[^a-zA-Z0-9]", "") + "@invitado.com");
+                    cli.setDireccion(direccion);
+                    cli.setTelefono(telefono);
+                    cli.setEstado("ACTIVO");
+                    clienteController.guardar(cli);
+                }
+
+                DireccionEnvio dir = new DireccionEnvio();
+                dir.setClienteId(cli.getId());
+                dir.setCalle(direccion);
+                dir.setCiudad("Guatemala");
+                dir.setCodigoPostal("01001");
+                dir.setPais("Guatemala");
+                direccionController.guardar(dir);
+
+                Pedido p = new Pedido();
+                p.setId(0);
+                p.setClienteId(cli.getId());
+                p.setDireccionEnvioId(dir.getId());
+                p.setEstado("PENDIENTE");
+                p.getDetalles().clear();
+                p.getDetalles().addAll(detallesLocales);
+                p.calcularTotal();
+
+                pedidoController.guardar(p);
+                actual = p;
+                txtId.setText(String.valueOf(p.getId()));
+
+                JOptionPane.showMessageDialog(this,
+                        "¡Orden de compra generada exitosamente!\n\n"
+                        + "Número de Orden: #" + p.getId() + "\n"
+                        + "Cliente: " + cli.getNombre() + "\n"
+                        + "Total: Q. " + String.format("%.2f", p.getTotal()) + "\n"
+                        + "Estado: PENDIENTE",
+                        "Orden Creada",
+                        JOptionPane.INFORMATION_MESSAGE);
+
+                if (alGuardar != null) {
+                    alGuardar.run();
+                }
+                dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error al guardar la orden de compra: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+            return;
+        }
+
         Cliente cli = (Cliente) cmbCliente.getSelectedItem();
         if (cli == null) {
             JOptionPane.showMessageDialog(this, "Debe seleccionar un cliente.", "Validación", JOptionPane.WARNING_MESSAGE);
