@@ -1,6 +1,14 @@
 package gt.edu.umg.sistema.estudiantes.vista;
 
-import gt.edu.umg.sistema.estudiantes.config.ContenedorAplicacion;
+import gt.edu.umg.sistema.estudiantes.controlador.CategoriaController;
+import gt.edu.umg.sistema.estudiantes.controlador.ClienteController;
+import gt.edu.umg.sistema.estudiantes.controlador.DireccionEnvioController;
+import gt.edu.umg.sistema.estudiantes.controlador.FacturaController;
+import gt.edu.umg.sistema.estudiantes.controlador.InventarioController;
+import gt.edu.umg.sistema.estudiantes.controlador.PagoController;
+import gt.edu.umg.sistema.estudiantes.controlador.PedidoController;
+import gt.edu.umg.sistema.estudiantes.controlador.ProductoController;
+import gt.edu.umg.sistema.estudiantes.controlador.VendedorController;
 import gt.edu.umg.sistema.estudiantes.modelo.Cliente;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -15,22 +23,36 @@ import javax.swing.WindowConstants;
 
 public class FrmPrincipal extends javax.swing.JFrame {
 
-    private final ContenedorAplicacion contenedor;
+    private final ClienteController clienteController;
+    private final CategoriaController categoriaController;
+    private final ProductoController productoController;
+    private final VendedorController vendedorController;
+    private final PedidoController pedidoController;
+    private final PagoController pagoController;
+    private final FacturaController facturaController;
+    private final InventarioController inventarioController;
+    private final DireccionEnvioController direccionEnvioController;
+
     private final String rol;
     private Cliente comprador;
     private FrmEstudiante frmEstudiante;
     private FrmInicio frmInicio;
 
     public FrmPrincipal() {
-        this(new ContenedorAplicacion(), "ADMIN", null);
+        this("ADMIN", null);
     }
 
-    public FrmPrincipal(ContenedorAplicacion contenedor) {
-        this(contenedor, "ADMIN", null);
-    }
+    public FrmPrincipal(String rol, Cliente comprador) {
+        this.clienteController = new ClienteController();
+        this.categoriaController = new CategoriaController();
+        this.productoController = new ProductoController();
+        this.vendedorController = new VendedorController();
+        this.pedidoController = new PedidoController();
+        this.pagoController = new PagoController();
+        this.facturaController = new FacturaController();
+        this.inventarioController = new InventarioController();
+        this.direccionEnvioController = new DireccionEnvioController();
 
-    public FrmPrincipal(ContenedorAplicacion contenedor, String rol, Cliente comprador) {
-        this.contenedor = contenedor;
         this.rol = (rol != null && !rol.trim().isEmpty()) ? rol.toUpperCase() : "ADMIN";
         this.comprador = comprador;
 
@@ -79,17 +101,17 @@ public class FrmPrincipal extends javax.swing.JFrame {
         JMenuItem itemHacerOrden = new JMenuItem("Hacer Nueva Orden de Compra");
 
         itemMisOrdenes.addActionListener(e -> abrirFormulario(new FrmFiltroPedido(
-                contenedor.getPedidoController(),
-                contenedor.getClienteController(),
-                contenedor.getProductoController(),
-                contenedor.getDireccionEnvioController(),
+                pedidoController,
+                clienteController,
+                productoController,
+                direccionEnvioController,
                 comprador)));
 
         itemHacerOrden.addActionListener(e -> abrirFormulario(new FrmTecleoPedido(
-                contenedor.getPedidoController(),
-                contenedor.getClienteController(),
-                contenedor.getProductoController(),
-                contenedor.getDireccionEnvioController(),
+                pedidoController,
+                clienteController,
+                productoController,
+                direccionEnvioController,
                 null,
                 null,
                 comprador)));
@@ -100,8 +122,8 @@ public class FrmPrincipal extends javax.swing.JFrame {
         JMenu menuStock = new JMenu("Stock de Productos");
         JMenuItem itemConsultarStock = new JMenuItem("Consultar Disponibilidad de Stock");
         itemConsultarStock.addActionListener(e -> abrirFormulario(new FrmInventario(
-                contenedor.getInventarioController(),
-                contenedor.getCategoriaController(),
+                inventarioController,
+                categoriaController,
                 true)));
         menuStock.add(itemConsultarStock);
 
@@ -132,11 +154,11 @@ public class FrmPrincipal extends javax.swing.JFrame {
         JMenuItem itemVendedores = new JMenuItem("Vendedores");
         JMenuItem itemAlumnos = new JMenuItem("Gestión Estudiantes");
 
-        itemClientes.addActionListener(e -> abrirFormulario(new FrmFiltroCliente(contenedor.getClienteController())));
-        itemCategorias.addActionListener(e -> abrirFormulario(new FrmFiltroCategoria(contenedor.getCategoriaController())));
+        itemClientes.addActionListener(e -> abrirFormulario(new FrmFiltroCliente(clienteController)));
+        itemCategorias.addActionListener(e -> abrirFormulario(new FrmFiltroCategoria(categoriaController)));
         itemProductos.addActionListener(e -> abrirFormulario(new FrmFiltroProducto(
-                contenedor.getProductoController(), contenedor.getCategoriaController())));
-        itemVendedores.addActionListener(e -> abrirFormulario(new FrmFiltroVendedor(contenedor.getVendedorController())));
+                productoController, categoriaController)));
+        itemVendedores.addActionListener(e -> abrirFormulario(new FrmFiltroVendedor(vendedorController)));
         itemAlumnos.addActionListener(e -> abrirAlumnos());
 
         menuCatalogos.add(itemClientes);
@@ -151,13 +173,13 @@ public class FrmPrincipal extends javax.swing.JFrame {
         JMenuItem itemPagos = new JMenuItem("Registro de Pagos");
 
         itemPedidos.addActionListener(e -> abrirFormulario(new FrmFiltroPedido(
-                contenedor.getPedidoController(),
-                contenedor.getClienteController(),
-                contenedor.getProductoController(),
-                contenedor.getDireccionEnvioController())));
+                pedidoController,
+                clienteController,
+                productoController,
+                direccionEnvioController)));
         itemPagos.addActionListener(e -> abrirFormulario(new FrmFiltroPago(
-                contenedor.getPagoController(),
-                contenedor.getPedidoController())));
+                pagoController,
+                pedidoController)));
 
         menuVentas.add(itemPedidos);
         menuVentas.add(itemPagos);
@@ -165,19 +187,19 @@ public class FrmPrincipal extends javax.swing.JFrame {
         JMenu menuInventario = new JMenu("Inventario");
         JMenuItem itemStock = new JMenuItem("Control de Inventario y Stock");
         itemStock.addActionListener(e -> abrirFormulario(new FrmInventario(
-                contenedor.getInventarioController(),
-                contenedor.getCategoriaController(),
+                inventarioController,
+                categoriaController,
                 false)));
         menuInventario.add(itemStock);
 
         JMenu menuFacturacion = new JMenu("Facturación");
         JMenuItem itemFacturas = new JMenuItem("Facturas");
         itemFacturas.addActionListener(e -> abrirFormulario(new FrmFiltroFactura(
-                contenedor.getFacturaController(),
-                contenedor.getClienteController(),
-                contenedor.getVendedorController(),
-                contenedor.getPedidoController(),
-                contenedor.getProductoController())));
+                facturaController,
+                clienteController,
+                vendedorController,
+                pedidoController,
+                productoController)));
         menuFacturacion.add(itemFacturas);
 
         JMenu menuSistema = new JMenu("Sistema");
@@ -255,7 +277,7 @@ public class FrmPrincipal extends javax.swing.JFrame {
     private void irAFrmInicio() {
         setVisible(false);
         if (frmInicio == null) {
-            frmInicio = new FrmInicio(contenedor);
+            frmInicio = new FrmInicio();
         }
         frmInicio.reiniciar();
         frmInicio.setVisible(true);
@@ -285,7 +307,7 @@ public class FrmPrincipal extends javax.swing.JFrame {
             }
         } catch (Exception ignored) {
         }
-        java.awt.EventQueue.invokeLater(() -> new FrmPrincipal(new ContenedorAplicacion()).setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new FrmPrincipal().setVisible(true));
     }
 
     @SuppressWarnings("unchecked")

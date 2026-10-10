@@ -1,6 +1,5 @@
 package gt.edu.umg.sistema.estudiantes;
 
-import gt.edu.umg.sistema.estudiantes.config.ContenedorAplicacion;
 import gt.edu.umg.sistema.estudiantes.vista.FrmInicio;
 import javax.swing.UIManager;
 
@@ -18,8 +17,7 @@ public class SistemaEstudiantes {
         }
 
         java.awt.EventQueue.invokeLater(() -> {
-            ContenedorAplicacion contenedor = new ContenedorAplicacion();
-            FrmInicio inicio = new FrmInicio(contenedor);
+            FrmInicio inicio = new FrmInicio();
             inicio.setVisible(true);
         });
     }

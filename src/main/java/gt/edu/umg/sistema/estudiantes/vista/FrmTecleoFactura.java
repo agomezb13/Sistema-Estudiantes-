@@ -230,8 +230,6 @@ public class FrmTecleoFactura extends JInternalFrame {
             JOptionPane.showMessageDialog(this, "La cantidad ingresada no es válida.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-
-        // Validar existencias disponibles en inventario
         int cantidadYaAgregada = 0;
         for (DetalleFactura d : detallesLocales) {
             if (d.getProductoId() == prod.getId()) {

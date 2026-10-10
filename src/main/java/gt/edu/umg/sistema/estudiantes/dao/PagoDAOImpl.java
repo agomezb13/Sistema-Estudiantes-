@@ -64,7 +64,6 @@ public class PagoDAOImpl implements PagoDAO {
                 }
             }
 
-            // Si el pago está en estado PAGADO, verificar si cubre el total del pedido para actualizarlo
             if ("PAGADO".equalsIgnoreCase(pago.getEstado())) {
                 try {
                     String sqlSum = "SELECT SUM(monto) FROM pago WHERE pedido_id = ? AND estado = 'PAGADO'";

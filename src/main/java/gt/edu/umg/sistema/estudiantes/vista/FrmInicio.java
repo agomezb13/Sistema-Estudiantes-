@@ -1,21 +1,14 @@
 package gt.edu.umg.sistema.estudiantes.vista;
 
 import gt.edu.umg.sistema.estudiantes.conexion.ConexionMySQL;
-import gt.edu.umg.sistema.estudiantes.config.ContenedorAplicacion;
 import javax.swing.JOptionPane;
 
 public class FrmInicio extends javax.swing.JFrame {
 
     private static String claveAdmin = "12345";
-    private final ContenedorAplicacion contenedor;
     private FrmPrincipal frmPrincipal;
 
     public FrmInicio() {
-        this(new ContenedorAplicacion());
-    }
-
-    public FrmInicio(ContenedorAplicacion contenedor) {
-        this.contenedor = contenedor;
         initComponents();
         setLocationRelativeTo(null);
         getRootPane().setDefaultButton(btnIngresar);
@@ -72,7 +65,7 @@ public class FrmInicio extends javax.swing.JFrame {
 
     private void abrirPrincipal(String rol) {
         setVisible(false);
-        frmPrincipal = new FrmPrincipal(contenedor, rol, null);
+        frmPrincipal = new FrmPrincipal(rol, null);
         frmPrincipal.setFrmInicio(this);
         frmPrincipal.setVisible(true);
         frmPrincipal.toFront();
@@ -231,7 +224,7 @@ public class FrmInicio extends javax.swing.JFrame {
             }
         } catch (Exception ignored) {
         }
-        java.awt.EventQueue.invokeLater(() -> new FrmInicio(new ContenedorAplicacion()).setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new FrmInicio().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

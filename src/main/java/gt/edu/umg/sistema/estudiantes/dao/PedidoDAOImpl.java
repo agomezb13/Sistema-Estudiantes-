@@ -223,7 +223,6 @@ public class PedidoDAOImpl implements PedidoDAO {
             ps.setInt(5, pedido.getId());
             ps.executeUpdate();
 
-            // Actualizar detalles si están presentes
             if (pedido.getDetalles() != null && !pedido.getDetalles().isEmpty()) {
                 try (PreparedStatement psDel = cn.prepareStatement("DELETE FROM detalle_pedido WHERE pedido_id = ?")) {
                     psDel.setInt(1, pedido.getId());
@@ -267,7 +266,6 @@ public class PedidoDAOImpl implements PedidoDAO {
         }
 
         try {
-            // Eliminar detalles primero para mantener integridad referencial
             try (PreparedStatement psDelDet = cn.prepareStatement("DELETE FROM detalle_pedido WHERE pedido_id = ?")) {
                 psDelDet.setInt(1, id);
                 psDelDet.executeUpdate();

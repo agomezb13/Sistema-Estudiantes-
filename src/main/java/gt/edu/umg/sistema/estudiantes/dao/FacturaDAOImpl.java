@@ -31,8 +31,10 @@ public class FacturaDAOImpl implements FacturaDAO {
             }
 
             int facturaId = factura.getId();
+            boolean esNueva = (facturaId <= 0) || (buscarPorId(facturaId) == null);
+
             if (facturaId > 0) {
-                if (buscarPorId(facturaId) != null) {
+                if (!esNueva) {
                     String sql = "UPDATE factura SET cliente_id = ?, vendedor_id = ?, numero = ?, subtotal = ?, impuesto = ?, total = ?, estado = ? WHERE id = ?";
                     try (PreparedStatement ps = cn.prepareStatement(sql)) {
                         ps.setInt(1, cId);
@@ -86,7 +88,6 @@ public class FacturaDAOImpl implements FacturaDAO {
                 }
             }
 
-            // Persistencia de detalles y descuento de existencias en el inventario
             if (facturaId > 0 && factura.getDetalles() != null && !factura.getDetalles().isEmpty()) {
                 try (PreparedStatement psDel = cn.prepareStatement("DELETE FROM detalle_factura WHERE factura_id = ?")) {
                     psDel.setInt(1, facturaId);
@@ -112,8 +113,7 @@ public class FacturaDAOImpl implements FacturaDAO {
                             }
                         }
 
-                        // Descontar stock únicamente si la factura es emitida o pagada
-                        if (!"ANULADA".equalsIgnoreCase(factura.getEstado())) {
+                        if (esNueva && !"ANULADA".equalsIgnoreCase(factura.getEstado())) {
                             psStock.setInt(1, d.getCantidad());
                             psStock.setInt(2, d.getProductoId());
                             psStock.executeUpdate();
@@ -121,7 +121,6 @@ public class FacturaDAOImpl implements FacturaDAO {
                     }
                 }
 
-                // Si la factura se generó a partir de un pedido, actualizar el estado del pedido a FACTURADO
                 if (factura.getPedidoId() > 0) {
                     try (PreparedStatement psPed = cn.prepareStatement("UPDATE pedido SET estado = 'FACTURADO' WHERE id = ?")) {
                         psPed.setInt(1, factura.getPedidoId());
@@ -248,7 +247,6 @@ public class FacturaDAOImpl implements FacturaDAO {
         }
 
         try {
-            // Verificar estado actual para no reponer stock si ya estaba anulada
             String sqlCheck = "SELECT estado FROM factura WHERE id = ?";
             String estadoActual = null;
             try (PreparedStatement psCheck = cn.prepareStatement(sqlCheck)) {
@@ -261,7 +259,6 @@ public class FacturaDAOImpl implements FacturaDAO {
             }
 
             if (!"ANULADA".equalsIgnoreCase(estadoActual)) {
-                // Reponer existencias de los productos de esta factura
                 String sqlDet = "SELECT producto_id, cantidad FROM detalle_factura WHERE factura_id = ?";
                 String sqlStock = "UPDATE producto SET stock = stock + ? WHERE id = ?";
                 try (PreparedStatement psDet = cn.prepareStatement(sqlDet);
@@ -302,7 +299,6 @@ public class FacturaDAOImpl implements FacturaDAO {
         }
 
         try {
-            // Eliminar detalles primero para mantener integridad
             try (PreparedStatement psDelDet = cn.prepareStatement("DELETE FROM detalle_factura WHERE factura_id = ?")) {
                 psDelDet.setInt(1, id);
                 psDelDet.executeUpdate();
