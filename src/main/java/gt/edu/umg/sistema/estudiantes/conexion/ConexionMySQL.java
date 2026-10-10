@@ -10,16 +10,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
-/**
- * Administrador de conexion JDBC con MySQL.
- * 
- * Caracteristicas principales:
- * 1. Lee la configuracion (host, puerto, usuario, contrasena) desde el archivo 'db.properties'.
- *    Por defecto se conecta al servidor en la nube Oracle Always Free.
- * 2. Si las tablas no existen al iniciar la aplicacion, las crea automaticamente
- *    mediante sentencias DDL (CREATE TABLE IF NOT EXISTS).
- * 3. Si las tablas estan vacias, inserta datos semilla de prueba (administrador, categorias...).
- */
 public class ConexionMySQL {
 
     private static String host = "localhost";
@@ -99,7 +89,6 @@ public class ConexionMySQL {
                     try {
                         return DriverManager.getConnection(url, user, "");
                     } catch (SQLException ex2) {
-                        // Continuar si no se pudo conectar
                     }
                 }
                 return null;

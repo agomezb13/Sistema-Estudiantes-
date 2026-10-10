@@ -18,15 +18,6 @@ import gt.edu.umg.sistema.estudiantes.dao.PedidoDAOImpl;
 import gt.edu.umg.sistema.estudiantes.dao.ProductoDAOImpl;
 import gt.edu.umg.sistema.estudiantes.dao.VendedorDAOImpl;
 
-/**
- * Contenedor de la aplicacion (Inyeccion de Dependencias sencilla).
- * 
- * En el patron MVC y DAO:
- * - Aqui se crean las instancias concretas de los DAOs (ClienteDAOImpl, ProductoDAOImpl, etc.).
- * - Se inyectan a cada Controlador (ClienteController, ProductoController, etc.).
- * - Las Vistas (formularios Swing) solicitan los controladores a traves de este contenedor.
- * Esto evita acoplamiento directo entre las vistas y el acceso a la base de datos.
- */
 public class ContenedorAplicacion {
 
     private final ClienteController clienteController;

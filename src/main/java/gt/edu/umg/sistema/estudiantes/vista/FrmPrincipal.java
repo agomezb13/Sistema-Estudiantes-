@@ -74,7 +74,6 @@ public class FrmPrincipal extends javax.swing.JFrame {
     private JMenuBar crearMenuInvitado() {
         JMenuBar menuBar = new JMenuBar();
 
-        // 1. Órdenes de Compra
         JMenu menuOrdenes = new JMenu("Órdenes de Compra");
         JMenuItem itemMisOrdenes = new JMenuItem("Consultar Órdenes de Compra");
         JMenuItem itemHacerOrden = new JMenuItem("Hacer Nueva Orden de Compra");
@@ -98,7 +97,6 @@ public class FrmPrincipal extends javax.swing.JFrame {
         menuOrdenes.add(itemMisOrdenes);
         menuOrdenes.add(itemHacerOrden);
 
-        // 2. Stock de Productos
         JMenu menuStock = new JMenu("Stock de Productos");
         JMenuItem itemConsultarStock = new JMenuItem("Consultar Disponibilidad de Stock");
         itemConsultarStock.addActionListener(e -> abrirFormulario(new FrmInventario(
@@ -107,7 +105,6 @@ public class FrmPrincipal extends javax.swing.JFrame {
                 true)));
         menuStock.add(itemConsultarStock);
 
-        // 3. Sesión
         JMenu menuSesion = new JMenu("Sesión");
         JMenuItem itemCerrarSesion = new JMenuItem("Cerrar Sesión / Cambiar Usuario");
         JMenuItem itemSalir = new JMenuItem("Salir del Sistema");
@@ -128,7 +125,6 @@ public class FrmPrincipal extends javax.swing.JFrame {
     private JMenuBar crearMenuAdmin() {
         JMenuBar menuBar = new JMenuBar();
 
-        // 1. Catálogos
         JMenu menuCatalogos = new JMenu("Catálogos");
         JMenuItem itemClientes = new JMenuItem("Clientes");
         JMenuItem itemCategorias = new JMenuItem("Categorías");
@@ -150,7 +146,6 @@ public class FrmPrincipal extends javax.swing.JFrame {
         menuCatalogos.addSeparator();
         menuCatalogos.add(itemAlumnos);
 
-        // 2. Ventas
         JMenu menuVentas = new JMenu("Ventas");
         JMenuItem itemPedidos = new JMenuItem("Pedidos");
         JMenuItem itemPagos = new JMenuItem("Registro de Pagos");
@@ -167,7 +162,6 @@ public class FrmPrincipal extends javax.swing.JFrame {
         menuVentas.add(itemPedidos);
         menuVentas.add(itemPagos);
 
-        // 3. Inventario
         JMenu menuInventario = new JMenu("Inventario");
         JMenuItem itemStock = new JMenuItem("Control de Inventario y Stock");
         itemStock.addActionListener(e -> abrirFormulario(new FrmInventario(
@@ -176,7 +170,6 @@ public class FrmPrincipal extends javax.swing.JFrame {
                 false)));
         menuInventario.add(itemStock);
 
-        // 4. Facturación
         JMenu menuFacturacion = new JMenu("Facturación");
         JMenuItem itemFacturas = new JMenuItem("Facturas");
         itemFacturas.addActionListener(e -> abrirFormulario(new FrmFiltroFactura(
@@ -187,7 +180,6 @@ public class FrmPrincipal extends javax.swing.JFrame {
                 contenedor.getProductoController())));
         menuFacturacion.add(itemFacturas);
 
-        // 5. Sistema
         JMenu menuSistema = new JMenu("Sistema");
         JMenuItem itemClaveAdmin = new JMenuItem("Cambiar Contraseña de Administrador");
         JMenuItem itemInicio = new JMenuItem("Cerrar Sesión / Menú de Inicio");

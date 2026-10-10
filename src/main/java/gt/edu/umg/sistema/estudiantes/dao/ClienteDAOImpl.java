@@ -1,7 +1,6 @@
 package gt.edu.umg.sistema.estudiantes.dao;
 
 import gt.edu.umg.sistema.estudiantes.conexion.ConexionMySQL;
-import gt.edu.umg.sistema.estudiantes.datos.BaseDatosMemoria;
 import gt.edu.umg.sistema.estudiantes.modelo.Cliente;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -11,36 +10,22 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Implementacion concreta del DAO para Cliente.
- * 
- * Responsabilidades:
- * - Realiza las consultas y actualizaciones JDBC hacia la base de datos MySQL (Oracle Cloud).
- * - Sincroniza los resultados con el cache local (BaseDatosMemoria).
- * - Maneja el cierre seguro de recursos JDBC (PreparedStatement, Connection).
- */
 public class ClienteDAOImpl implements ClienteDAO {
-
-    private final BaseDatosMemoria db = BaseDatosMemoria.getInstancia();
 
     @Override
     public void guardar(Cliente cliente) {
-        boolean esNuevo = (cliente.getId() <= 0) || (buscarPorId(cliente.getId()) == null);
-
-        if (cliente.getId() <= 0) {
-            cliente.setId(db.siguienteIdCliente());
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn == null) {
+            return;
         }
 
-        if (esNuevo) {
-            db.getClientes().removeIf(c -> c.getId() == cliente.getId());
-            db.getClientes().add(cliente);
-
-            Connection cn = ConexionMySQL.getConnection();
-            if (cn != null) {
-                String sql = "INSERT INTO cliente (id, nombre, correo, telefono, direccion, numero_dpi, nit, estado) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
-                        + "ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), correo=VALUES(correo), telefono=VALUES(telefono), "
-                        + "direccion=VALUES(direccion), numero_dpi=VALUES(numero_dpi), nit=VALUES(nit), estado=VALUES(estado)";
+        try {
+            if (cliente.getId() > 0) {
+                if (buscarPorId(cliente.getId()) != null) {
+                    actualizar(cliente);
+                    return;
+                }
+                String sql = "INSERT INTO cliente (id, nombre, correo, telefono, direccion, numero_dpi, nit, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement ps = cn.prepareStatement(sql)) {
                     ps.setInt(1, cliente.getId());
                     ps.setString(2, cliente.getNombre());
@@ -51,62 +36,80 @@ public class ClienteDAOImpl implements ClienteDAO {
                     ps.setString(7, cliente.getNIT() == null ? "" : cliente.getNIT());
                     ps.setString(8, cliente.getEstado() == null ? "ACTIVO" : cliente.getEstado());
                     ps.executeUpdate();
-                } catch (SQLException e) {
-                    System.out.println("Aviso al persistir cliente en BD: " + e.getMessage());
-                } finally {
-                    try {
-                        cn.close();
-                    } catch (SQLException ignored) {
+                }
+            } else {
+                String sql = "INSERT INTO cliente (nombre, correo, telefono, direccion, numero_dpi, nit, estado) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                    ps.setString(1, cliente.getNombre());
+                    ps.setString(2, cliente.getCorreo() == null ? "" : cliente.getCorreo());
+                    ps.setString(3, cliente.getTelefono() == null ? "" : cliente.getTelefono());
+                    ps.setString(4, cliente.getDireccion() == null ? "" : cliente.getDireccion());
+                    ps.setString(5, cliente.getNumeroDPI() == null ? "" : cliente.getNumeroDPI());
+                    ps.setString(6, cliente.getNIT() == null ? "" : cliente.getNIT());
+                    ps.setString(7, cliente.getEstado() == null ? "ACTIVO" : cliente.getEstado());
+                    ps.executeUpdate();
+                    try (ResultSet rs = ps.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            cliente.setId(rs.getInt(1));
+                        }
                     }
                 }
             }
-        } else {
-            actualizar(cliente);
+        } catch (SQLException e) {
+            System.err.println("Error ClienteDAOImpl.guardar: " + e.getMessage());
+        } finally {
+            try {
+                cn.close();
+            } catch (SQLException ignored) {
+            }
         }
     }
 
     @Override
     public List<Cliente> listar() {
-        if (db.getClientes().isEmpty()) {
-            db.cargarDatosDesdeBD();
+        List<Cliente> lista = new ArrayList<>();
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn == null) {
+            return lista;
         }
-        return new ArrayList<>(db.getClientes());
+
+        String sql = "SELECT id, nombre, correo, telefono, direccion, numero_dpi, nit, estado FROM cliente ORDER BY id ASC";
+        try (Statement st = cn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) {
+                lista.add(mapearCliente(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error ClienteDAOImpl.listar: " + e.getMessage());
+        } finally {
+            try {
+                cn.close();
+            } catch (SQLException ignored) {
+            }
+        }
+        return lista;
     }
 
     @Override
     public Cliente buscarPorId(int id) {
-        for (Cliente c : listar()) {
-            if (c.getId() == id) {
-                return c;
-            }
-        }
         Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            String sql = "SELECT id, nombre, correo, telefono, direccion, numero_dpi, nit, estado FROM cliente WHERE id = ?";
-            try (PreparedStatement ps = cn.prepareStatement(sql)) {
-                ps.setInt(1, id);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        Cliente c = new Cliente(
-                                rs.getInt("id"),
-                                rs.getString("nombre"),
-                                rs.getString("correo"),
-                                rs.getString("telefono"),
-                                rs.getString("direccion"),
-                                rs.getString("numero_dpi"),
-                                rs.getString("nit"),
-                                rs.getString("estado")
-                        );
-                        db.getClientes().add(c);
-                        return c;
-                    }
+        if (cn == null) {
+            return null;
+        }
+
+        String sql = "SELECT id, nombre, correo, telefono, direccion, numero_dpi, nit, estado FROM cliente WHERE id = ?";
+        try (PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapearCliente(rs);
                 }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error ClienteDAOImpl.buscarPorId: " + e.getMessage());
+        } finally {
+            try {
+                cn.close();
             } catch (SQLException ignored) {
-            } finally {
-                try {
-                    cn.close();
-                } catch (SQLException ignored) {
-                }
             }
         }
         return null;
@@ -114,82 +117,104 @@ public class ClienteDAOImpl implements ClienteDAO {
 
     @Override
     public List<Cliente> buscar(String nit, String nombre) {
-        List<Cliente> resultado = new ArrayList<>();
-        String nLower = nombre == null ? "" : nombre.toLowerCase();
-        String nitLower = nit == null ? "" : nit.toLowerCase();
+        List<Cliente> lista = new ArrayList<>();
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn == null) {
+            return lista;
+        }
 
-        for (Cliente c : listar()) {
-            boolean coincideNit = nitLower.isEmpty() || (c.getNIT() != null && c.getNIT().toLowerCase().contains(nitLower));
-            boolean coincideNom = nLower.isEmpty() || (c.getNombre() != null && c.getNombre().toLowerCase().contains(nLower));
-            if (coincideNit && coincideNom) {
-                resultado.add(c);
+        StringBuilder sql = new StringBuilder("SELECT id, nombre, correo, telefono, direccion, numero_dpi, nit, estado FROM cliente WHERE 1=1");
+        List<String> params = new ArrayList<>();
+
+        if (nit != null && !nit.trim().isEmpty()) {
+            sql.append(" AND LOWER(nit) LIKE ?");
+            params.add("%" + nit.trim().toLowerCase() + "%");
+        }
+        if (nombre != null && !nombre.trim().isEmpty()) {
+            sql.append(" AND LOWER(nombre) LIKE ?");
+            params.add("%" + nombre.trim().toLowerCase() + "%");
+        }
+        sql.append(" ORDER BY id ASC");
+
+        try (PreparedStatement ps = cn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setString(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapearCliente(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error ClienteDAOImpl.buscar: " + e.getMessage());
+        } finally {
+            try {
+                cn.close();
+            } catch (SQLException ignored) {
             }
         }
-        return resultado;
+        return lista;
     }
 
     @Override
     public void actualizar(Cliente cliente) {
-        Cliente actual = null;
-        for (Cliente c : db.getClientes()) {
-            if (c.getId() == cliente.getId()) {
-                actual = c;
-                break;
-            }
-        }
-        if (actual == null) {
-            db.getClientes().add(cliente);
-        } else {
-            actual.setNombre(cliente.getNombre());
-            actual.setCorreo(cliente.getCorreo());
-            actual.setTelefono(cliente.getTelefono());
-            actual.setDireccion(cliente.getDireccion());
-            actual.setNumeroDPI(cliente.getNumeroDPI());
-            actual.setNIT(cliente.getNIT());
-            actual.setEstado(cliente.getEstado());
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn == null) {
+            return;
         }
 
-        Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            String sql = "UPDATE cliente SET nombre = ?, correo = ?, telefono = ?, direccion = ?, numero_dpi = ?, nit = ?, estado = ? WHERE id = ?";
-            try (PreparedStatement ps = cn.prepareStatement(sql)) {
-                ps.setString(1, cliente.getNombre());
-                ps.setString(2, cliente.getCorreo() == null ? "" : cliente.getCorreo());
-                ps.setString(3, cliente.getTelefono() == null ? "" : cliente.getTelefono());
-                ps.setString(4, cliente.getDireccion() == null ? "" : cliente.getDireccion());
-                ps.setString(5, cliente.getNumeroDPI() == null ? "" : cliente.getNumeroDPI());
-                ps.setString(6, cliente.getNIT() == null ? "" : cliente.getNIT());
-                ps.setString(7, cliente.getEstado() == null ? "ACTIVO" : cliente.getEstado());
-                ps.setInt(8, cliente.getId());
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                System.out.println("Aviso al actualizar cliente en BD: " + e.getMessage());
-            } finally {
-                try {
-                    cn.close();
-                } catch (SQLException ignored) {
-                }
+        String sql = "UPDATE cliente SET nombre = ?, correo = ?, telefono = ?, direccion = ?, numero_dpi = ?, nit = ?, estado = ? WHERE id = ?";
+        try (PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, cliente.getNombre());
+            ps.setString(2, cliente.getCorreo() == null ? "" : cliente.getCorreo());
+            ps.setString(3, cliente.getTelefono() == null ? "" : cliente.getTelefono());
+            ps.setString(4, cliente.getDireccion() == null ? "" : cliente.getDireccion());
+            ps.setString(5, cliente.getNumeroDPI() == null ? "" : cliente.getNumeroDPI());
+            ps.setString(6, cliente.getNIT() == null ? "" : cliente.getNIT());
+            ps.setString(7, cliente.getEstado() == null ? "ACTIVO" : cliente.getEstado());
+            ps.setInt(8, cliente.getId());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error ClienteDAOImpl.actualizar: " + e.getMessage());
+        } finally {
+            try {
+                cn.close();
+            } catch (SQLException ignored) {
             }
         }
     }
 
     @Override
     public void eliminar(int id) {
-        db.getClientes().removeIf(c -> c.getId() == id);
         Connection cn = ConexionMySQL.getConnection();
-        if (cn != null) {
-            String sql = "DELETE FROM cliente WHERE id = ?";
-            try (PreparedStatement ps = cn.prepareStatement(sql)) {
-                ps.setInt(1, id);
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                System.out.println("Aviso al eliminar cliente en BD: " + e.getMessage());
-            } finally {
-                try {
-                    cn.close();
-                } catch (SQLException ignored) {
-                }
+        if (cn == null) {
+            return;
+        }
+
+        String sql = "DELETE FROM cliente WHERE id = ?";
+        try (PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error ClienteDAOImpl.eliminar: " + e.getMessage());
+        } finally {
+            try {
+                cn.close();
+            } catch (SQLException ignored) {
             }
         }
+    }
+
+    private Cliente mapearCliente(ResultSet rs) throws SQLException {
+        return new Cliente(
+                rs.getInt("id"),
+                rs.getString("nombre"),
+                rs.getString("correo"),
+                rs.getString("telefono"),
+                rs.getString("direccion"),
+                rs.getString("numero_dpi"),
+                rs.getString("nit"),
+                rs.getString("estado")
+        );
     }
 }

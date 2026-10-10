@@ -5,12 +5,6 @@ import gt.edu.umg.sistema.estudiantes.dao.ClienteDAOImpl;
 import gt.edu.umg.sistema.estudiantes.modelo.Cliente;
 import java.util.List;
 
-/**
- * Controlador para la gestion de Clientes (Patron MVC).
- * 
- * Actua como intermediario entre la Vista (FrmTecleoCliente, FrmFiltroCliente)
- * y el Modelo/Datos (ClienteDAO). Valida las reglas de negocio antes de persistir.
- */
 public class ClienteController {
 
     private final ClienteDAO dao;

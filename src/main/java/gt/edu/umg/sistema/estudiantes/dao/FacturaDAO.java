@@ -10,8 +10,6 @@ public interface FacturaDAO {
     List<Factura> buscar(String numero, Integer clienteId);
     void anular(int id);
     void eliminar(int id);
-
-    // Compatibilidad
     void guardarFactura(String nit, String nombre, String direccion, String fechaEmision, String fechaCertificacion, double subtotal, double iva, double total);
     void eliminarFactura(String nit);
 }
