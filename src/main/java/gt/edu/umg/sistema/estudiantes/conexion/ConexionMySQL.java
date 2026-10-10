@@ -1,77 +1,22 @@
 package gt.edu.umg.sistema.estudiantes.conexion;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Properties;
 
 public class ConexionMySQL {
 
-    private static String host = "localhost";
-    private static String puerto = "3306";
-    private static String baseDatos = "sistema_ventas";
-    private static String user = "root";
-    private static String password = "4147";
+    private static final String HOST = "159.54.148.6";
+    private static final String PUERTO = "3306";
+    private static final String BASE_DATOS = "sistema_ventas";
+    private static final String USER = "root";
+    private static final String PASSWORD = "4147";
+
+    private static final String URL = "jdbc:mysql://" + HOST + ":" + PUERTO + "/" + BASE_DATOS
+            + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+
     private static boolean inicializado = false;
-
-    private static final String ARCHIVO_PROPIEDADES = "db.properties";
-
-    static {
-        cargarConfiguracion();
-    }
-
-    public static void cargarConfiguracion() {
-        Properties props = new Properties();
-        File f = new File(ARCHIVO_PROPIEDADES);
-        if (f.exists()) {
-            try (FileInputStream in = new FileInputStream(f)) {
-                props.load(in);
-            } catch (IOException e) {
-                System.out.println("Aviso al leer " + ARCHIVO_PROPIEDADES + ": " + e.getMessage());
-            }
-        } else {
-            try (var stream = ConexionMySQL.class.getClassLoader().getResourceAsStream(ARCHIVO_PROPIEDADES)) {
-                if (stream != null) {
-                    props.load(stream);
-                }
-            } catch (IOException ignored) {
-            }
-        }
-
-        if (!props.isEmpty()) {
-            host = props.getProperty("db.host", host);
-            puerto = props.getProperty("db.port", puerto);
-            baseDatos = props.getProperty("db.name", baseDatos);
-            user = props.getProperty("db.user", user);
-            password = props.getProperty("db.password", password);
-        }
-    }
-
-    public static void guardarConfiguracion(String nuevoHost, String nuevoPuerto, String nuevaBD, String nuevoUser, String nuevoPass) {
-        host = nuevoHost;
-        puerto = nuevoPuerto;
-        baseDatos = nuevaBD;
-        user = nuevoUser;
-        password = nuevoPass;
-
-        Properties props = new Properties();
-        props.setProperty("db.host", host);
-        props.setProperty("db.port", puerto);
-        props.setProperty("db.name", baseDatos);
-        props.setProperty("db.user", user);
-        props.setProperty("db.password", password);
-
-        try (FileOutputStream out = new FileOutputStream(ARCHIVO_PROPIEDADES)) {
-            props.store(out, "Configuracion conexion MySQL Workbench");
-        } catch (IOException e) {
-            System.out.println("Aviso al guardar " + ARCHIVO_PROPIEDADES + ": " + e.getMessage());
-        }
-    }
 
     public static Connection getConnection() {
         if (!inicializado) {
@@ -80,21 +25,12 @@ public class ConexionMySQL {
         }
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            String url = "jdbc:mysql://" + host + ":" + puerto + "/" + baseDatos
-                    + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-            try {
-                return DriverManager.getConnection(url, user, password);
-            } catch (SQLException ex) {
-                if (!password.isEmpty()) {
-                    try {
-                        return DriverManager.getConnection(url, user, "");
-                    } catch (SQLException ex2) {
-                    }
-                }
-                return null;
-            }
+            return DriverManager.getConnection(URL, USER, PASSWORD);
         } catch (ClassNotFoundException e) {
             System.out.println("Driver MySQL no encontrado: " + e.getMessage());
+            return null;
+        } catch (SQLException e) {
+            System.out.println("Error de conexion a MySQL: " + e.getMessage());
             return null;
         }
     }
@@ -111,7 +47,7 @@ public class ConexionMySQL {
         System.out.println("Iniciando prueba de conexion a MySQL...");
         inicializarBaseDatos();
         if (probarConexion()) {
-            System.out.println("EXITO: Conexion establecida con MySQL en " + host + ":" + puerto + "/" + baseDatos);
+            System.out.println("EXITO: Conexion establecida con MySQL en " + HOST + ":" + PUERTO + "/" + BASE_DATOS);
         } else {
             System.out.println("AVISO: No se pudo conectar con las credenciales actuales.");
         }
@@ -121,39 +57,18 @@ public class ConexionMySQL {
         inicializado = true;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            String urlServer = "jdbc:mysql://" + host + ":" + puerto
+            String urlServer = "jdbc:mysql://" + HOST + ":" + PUERTO
                     + "/?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
 
-            Connection cnServer = null;
-            try {
-                cnServer = DriverManager.getConnection(urlServer, user, password);
-            } catch (SQLException e) {
-                try {
-                    cnServer = DriverManager.getConnection(urlServer, user, "");
-                } catch (SQLException ignored) {
-                }
-            }
-
-            if (cnServer != null) {
+            try (Connection cnServer = DriverManager.getConnection(urlServer, USER, PASSWORD)) {
                 try (Statement stmt = cnServer.createStatement()) {
-                    stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + baseDatos
+                    stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + BASE_DATOS
                             + " CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci");
                 }
-                cnServer.close();
+            } catch (SQLException ignored) {
             }
 
-            String urlBD = "jdbc:mysql://" + host + ":" + puerto + "/" + baseDatos
-                    + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-            Connection cnBD = null;
-            try {
-                cnBD = DriverManager.getConnection(urlBD, user, password);
-            } catch (SQLException e) {
-                try {
-                    cnBD = DriverManager.getConnection(urlBD, user, "");
-                } catch (SQLException ignored) {
-                }
-            }
-            if (cnBD != null) {
+            try (Connection cnBD = DriverManager.getConnection(URL, USER, PASSWORD)) {
                 try (Statement stmt = cnBD.createStatement()) {
                     stmt.executeUpdate("CREATE TABLE IF NOT EXISTS cliente ("
                             + "id INT AUTO_INCREMENT PRIMARY KEY, "
@@ -251,58 +166,29 @@ public class ConexionMySQL {
                     stmt.executeUpdate("INSERT IGNORE INTO categoria (id, nombre, descripcion) VALUES (1, 'General', 'Categoria General')");
                     stmt.executeUpdate("INSERT IGNORE INTO vendedor (id, nombre, codigo_empleado, departamento, telefono, correo, estado) VALUES (1, 'Administrador', 'VEND-001', 'Ventas', '55555555', 'admin@tienda.com', 'ACTIVO')");
                 }
-                cnBD.close();
             }
         } catch (Exception e) {
             System.out.println("Aviso: MySQL no disponible (" + e.getMessage() + ")");
         }
     }
 
-    public static void configurar(String nuevoHost, String nuevoPuerto, String nuevaBD, String nuevoUser, String nuevoPass) {
-        host = nuevoHost;
-        puerto = nuevoPuerto;
-        baseDatos = nuevaBD;
-        user = nuevoUser;
-        password = nuevoPass;
-    }
-
     public static String getHost() {
-        return host;
-    }
-
-    public static void setHost(String nuevoHost) {
-        host = nuevoHost;
+        return HOST;
     }
 
     public static String getPuerto() {
-        return puerto;
-    }
-
-    public static void setPuerto(String nuevoPuerto) {
-        puerto = nuevoPuerto;
+        return PUERTO;
     }
 
     public static String getBaseDatos() {
-        return baseDatos;
-    }
-
-    public static void setBaseDatos(String nuevaBD) {
-        baseDatos = nuevaBD;
+        return BASE_DATOS;
     }
 
     public static String getUser() {
-        return user;
-    }
-
-    public static void setUser(String nuevoUser) {
-        user = nuevoUser;
+        return USER;
     }
 
     public static String getPassword() {
-        return password;
-    }
-
-    public static void setPassword(String nuevoPassword) {
-        password = nuevoPassword;
+        return PASSWORD;
     }
 }
