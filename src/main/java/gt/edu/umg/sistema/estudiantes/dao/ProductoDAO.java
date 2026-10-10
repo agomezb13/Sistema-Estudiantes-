@@ -10,4 +10,6 @@ public interface ProductoDAO {
     List<Producto> buscar(String nombre, Integer categoriaId);
     void actualizar(Producto producto);
     void eliminar(int id);
+    boolean descontarStock(int productoId, int cantidad);
+    void reponerStock(int productoId, int cantidad);
 }

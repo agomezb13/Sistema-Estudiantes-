@@ -63,6 +63,41 @@ public class PagoDAOImpl implements PagoDAO {
                     }
                 }
             }
+
+            // Si el pago está en estado PAGADO, verificar si cubre el total del pedido para actualizarlo
+            if ("PAGADO".equalsIgnoreCase(pago.getEstado())) {
+                try {
+                    String sqlSum = "SELECT SUM(monto) FROM pago WHERE pedido_id = ? AND estado = 'PAGADO'";
+                    double totalPagado = 0.0;
+                    try (PreparedStatement psSum = cn.prepareStatement(sqlSum)) {
+                        psSum.setInt(1, pedId);
+                        try (ResultSet rsSum = psSum.executeQuery()) {
+                            if (rsSum.next()) {
+                                totalPagado = rsSum.getDouble(1);
+                            }
+                        }
+                    }
+
+                    String sqlPed = "SELECT total FROM pedido WHERE id = ?";
+                    double totalPedido = 0.0;
+                    try (PreparedStatement psPed = cn.prepareStatement(sqlPed)) {
+                        psPed.setInt(1, pedId);
+                        try (ResultSet rsPed = psPed.executeQuery()) {
+                            if (rsPed.next()) {
+                                totalPedido = rsPed.getDouble("total");
+                            }
+                        }
+                    }
+
+                    if (totalPagado >= totalPedido) {
+                        try (PreparedStatement psUp = cn.prepareStatement("UPDATE pedido SET estado = 'PAGADO' WHERE id = ?")) {
+                            psUp.setInt(1, pedId);
+                            psUp.executeUpdate();
+                        }
+                    }
+                } catch (SQLException ignored) {
+                }
+            }
         } catch (SQLException e) {
             System.err.println("Error PagoDAOImpl.guardar: " + e.getMessage());
         } finally {

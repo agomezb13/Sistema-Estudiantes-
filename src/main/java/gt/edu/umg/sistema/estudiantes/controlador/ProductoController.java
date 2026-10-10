@@ -42,4 +42,12 @@ public class ProductoController {
     public void eliminar(int id) {
         dao.eliminar(id);
     }
+
+    public boolean descontarStock(int productoId, int cantidad) {
+        return dao.descontarStock(productoId, cantidad);
+    }
+
+    public void reponerStock(int productoId, int cantidad) {
+        dao.reponerStock(productoId, cantidad);
+    }
 }

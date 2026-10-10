@@ -175,7 +175,11 @@ public class FrmTecleoPago extends JInternalFrame {
             actual = p;
             txtId.setText(String.valueOf(p.getId()));
             txtId.setEditable(false);
-            JOptionPane.showMessageDialog(this, "Pago guardado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            String msg = "Pago guardado exitosamente.";
+            if ("PAGADO".equalsIgnoreCase(p.getEstado())) {
+                msg += "\nEl estado del pedido #" + ped.getId() + " fue actualizado a PAGADO.";
+            }
+            JOptionPane.showMessageDialog(this, msg, "Éxito", JOptionPane.INFORMATION_MESSAGE);
 
             if (alGuardar != null) {
                 alGuardar.run();

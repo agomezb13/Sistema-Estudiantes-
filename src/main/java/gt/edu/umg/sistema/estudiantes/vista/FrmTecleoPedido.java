@@ -48,6 +48,7 @@ public class FrmTecleoPedido extends JInternalFrame {
     private final JComboBox<Producto> cmbProducto;
     private final JTextField txtCantidad = new JTextField("1", 5);
     private final JTextField txtPrecioUnitario = new JTextField(7);
+    private final JLabel lblStockDisponible = new JLabel("Stock disp.: -");
 
     private final DefaultTableModel modeloDetalle = FormularioHelper.modeloNoEditable(
             new String[]{"ID Prod", "Producto", "Cantidad", "Precio Unitario", "Subtotal"}
@@ -101,8 +102,10 @@ public class FrmTecleoPedido extends JInternalFrame {
             Producto prod = (Producto) cmbProducto.getSelectedItem();
             if (prod != null) {
                 txtPrecioUnitario.setText(String.format("%.2f", prod.getPrecio()));
+                lblStockDisponible.setText("Stock disp.: " + prod.getExistencias());
             } else {
                 txtPrecioUnitario.setText("");
+                lblStockDisponible.setText("Stock disp.: -");
             }
         });
     }
@@ -131,6 +134,7 @@ public class FrmTecleoPedido extends JInternalFrame {
         panelAgregarItem.setBorder(BorderFactory.createTitledBorder("Agregar Ítems"));
         panelAgregarItem.add(new JLabel("Producto:"));
         panelAgregarItem.add(cmbProducto);
+        panelAgregarItem.add(lblStockDisponible);
         panelAgregarItem.add(new JLabel("Cant:"));
         panelAgregarItem.add(txtCantidad);
         panelAgregarItem.add(new JLabel("Precio:"));
@@ -190,6 +194,24 @@ public class FrmTecleoPedido extends JInternalFrame {
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "La cantidad ingresada no es válida.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Validar existencias disponibles en inventario
+        int cantidadYaAgregada = 0;
+        for (DetallePedido d : detallesLocales) {
+            if (d.getProductoId() == prod.getId()) {
+                cantidadYaAgregada += d.getCantidad();
+            }
+        }
+        if (cantidadYaAgregada + cantidad > prod.getExistencias()) {
+            JOptionPane.showMessageDialog(this,
+                    "Stock insuficiente para '" + prod.getNombre() + "'.\n"
+                    + "Existencias en bodega: " + prod.getExistencias() + "\n"
+                    + "Ya agregadas al pedido: " + cantidadYaAgregada + "\n"
+                    + "Intenta agregar: " + cantidad,
+                    "Stock Insuficiente",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
 

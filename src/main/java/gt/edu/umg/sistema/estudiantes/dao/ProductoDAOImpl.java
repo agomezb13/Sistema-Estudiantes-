@@ -218,6 +218,53 @@ public class ProductoDAOImpl implements ProductoDAO {
         }
     }
 
+    @Override
+    public boolean descontarStock(int productoId, int cantidad) {
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn == null) {
+            return false;
+        }
+
+        String sql = "UPDATE producto SET stock = stock - ? WHERE id = ? AND stock >= ?";
+        try (PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, cantidad);
+            ps.setInt(2, productoId);
+            ps.setInt(3, cantidad);
+            int filas = ps.executeUpdate();
+            return filas > 0;
+        } catch (SQLException e) {
+            System.err.println("Error ProductoDAOImpl.descontarStock: " + e.getMessage());
+            return false;
+        } finally {
+            try {
+                cn.close();
+            } catch (SQLException ignored) {
+            }
+        }
+    }
+
+    @Override
+    public void reponerStock(int productoId, int cantidad) {
+        Connection cn = ConexionMySQL.getConnection();
+        if (cn == null) {
+            return;
+        }
+
+        String sql = "UPDATE producto SET stock = stock + ? WHERE id = ?";
+        try (PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, cantidad);
+            ps.setInt(2, productoId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error ProductoDAOImpl.reponerStock: " + e.getMessage());
+        } finally {
+            try {
+                cn.close();
+            } catch (SQLException ignored) {
+            }
+        }
+    }
+
     private Producto mapearProducto(ResultSet rs) throws SQLException {
         return new Producto(
                 rs.getInt("id"),

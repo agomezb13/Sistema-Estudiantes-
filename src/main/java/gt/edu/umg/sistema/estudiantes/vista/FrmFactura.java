@@ -1,5 +1,6 @@
 package gt.edu.umg.sistema.estudiantes.vista;
 
+import gt.edu.umg.sistema.estudiantes.conexion.ConexionMySQL;
 import gt.edu.umg.sistema.estudiantes.dao.FacturaDAO;
 import gt.edu.umg.sistema.estudiantes.dao.FacturaDAOImpl;
 import gt.edu.umg.sistema.estudiantes.modelo.DetalleFactura;
@@ -114,19 +115,89 @@ public class FrmFactura extends javax.swing.JFrame {
 
     private void guardarFactura() {
         try {
-            FacturaDAO dao = new FacturaDAOImpl();
-            String nit = txtNitReceptor.getText();
-            String nombre = txtNombreCliente.getText();
-            String direccion = txtDirecciónCliente.getText();
-            String fechaEmision = txtFechaHoraEmision.getText();
-            String fechaCertificacion = txtFechaHoraCertificacion.getText();
+            String nit = txtNitReceptor.getText().trim();
+            String nombre = txtNombreCliente.getText().trim();
+            String direccion = txtDirecciónCliente.getText().trim();
+
+            if (nit.isEmpty() || nombre.isEmpty()) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Debe ingresar el NIT y el Nombre del cliente.", "Validación", javax.swing.JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            if (tblDetalleFactura.getRowCount() == 0) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Debe agregar al menos un producto a la factura.", "Validación", javax.swing.JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
             double subtotal = Double.parseDouble(lblSubtotal.getText().replace(",", "."));
             double iva = Double.parseDouble(lblIVA.getText().replace(",", "."));
             double total = Double.parseDouble(lblTotal.getText().replace(",", "."));
 
-            dao.guardarFactura(nit, nombre, direccion, fechaEmision, fechaCertificacion, subtotal, iva, total);
-            javax.swing.JOptionPane.showMessageDialog(this, "Factura guardada con éxito.");
+            FacturaDAO dao = new FacturaDAOImpl();
+
+            // Buscar o crear cliente en MySQL
+            int clienteId = 1;
+            try (java.sql.Connection cn = ConexionMySQL.getConnection()) {
+                if (cn != null) {
+                    String sqlCli = "SELECT id FROM cliente WHERE LOWER(nit) = ? LIMIT 1";
+                    try (java.sql.PreparedStatement ps = cn.prepareStatement(sqlCli)) {
+                        ps.setString(1, nit.toLowerCase());
+                        try (java.sql.ResultSet rs = ps.executeQuery()) {
+                            if (rs.next()) {
+                                clienteId = rs.getInt("id");
+                            } else {
+                                String ins = "INSERT INTO cliente (nombre, correo, direccion, nit, estado) VALUES (?, '', ?, ?, 'ACTIVO')";
+                                try (java.sql.PreparedStatement psIns = cn.prepareStatement(ins, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                                    psIns.setString(1, nombre);
+                                    psIns.setString(2, direccion);
+                                    psIns.setString(3, nit);
+                                    psIns.executeUpdate();
+                                    try (java.sql.ResultSet rsKey = psIns.getGeneratedKeys()) {
+                                        if (rsKey.next()) clienteId = rsKey.getInt(1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Asegurar que los productos del detalle existan en la tabla producto para descontar stock
+                    for (DetalleFactura d : facturaActual.getDetalles()) {
+                        if (d.getProductoId() <= 0 && d.getProducto() != null) {
+                            String nomP = d.getProducto().getNombre();
+                            String sqlP = "SELECT id FROM producto WHERE LOWER(nombre) = ? LIMIT 1";
+                            try (java.sql.PreparedStatement psP = cn.prepareStatement(sqlP)) {
+                                psP.setString(1, nomP.toLowerCase());
+                                try (java.sql.ResultSet rsP = psP.executeQuery()) {
+                                    if (rsP.next()) {
+                                        d.setProductoId(rsP.getInt("id"));
+                                    } else {
+                                        String insP = "INSERT INTO producto (categoria_id, nombre, descripcion, precio, stock, sku) VALUES (1, ?, ?, ?, 100, 'PROD-AUTO')";
+                                        try (java.sql.PreparedStatement psInsP = cn.prepareStatement(insP, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                                            psInsP.setString(1, nomP);
+                                            psInsP.setString(2, nomP);
+                                            psInsP.setDouble(3, d.getPrecioUnitario());
+                                            psInsP.executeUpdate();
+                                            try (java.sql.ResultSet rsKP = psInsP.getGeneratedKeys()) {
+                                                if (rsKP.next()) d.setProductoId(rsKP.getInt(1));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            facturaActual.setClienteId(clienteId);
+            facturaActual.setVendedorId(1);
+            facturaActual.setSubtotal(subtotal);
+            facturaActual.setImpuesto(iva);
+            facturaActual.setTotal(total);
+            facturaActual.setEstado("EMITIDA");
+
+            dao.guardar(facturaActual);
+            javax.swing.JOptionPane.showMessageDialog(this, "Factura guardada con éxito en la base de datos.");
         } catch (NumberFormatException e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Error: Asegúrese de agregar productos y calcular totales antes de guardar.", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         } catch (Exception ex) {
@@ -135,7 +206,67 @@ public class FrmFactura extends javax.swing.JFrame {
     }
 
     private void imprimirFactura() {
-        javax.swing.JOptionPane.showMessageDialog(this, "Generando vista previa de impresión...");
+        if (tblDetalleFactura.getRowCount() == 0) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Debe agregar productos a la factura antes de imprimir.", "Aviso", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("=====================================================\n");
+        sb.append("               SISTEMA DE FACTURACIÓN                \n");
+        sb.append("                DOCUMENTO TRIBUTARIO                 \n");
+        sb.append("=====================================================\n");
+        sb.append("Fecha Emisión : ").append(txtFechaHoraEmision.getText().isEmpty() ? new java.util.Date().toString() : txtFechaHoraEmision.getText()).append("\n");
+        sb.append("NIT Receptor  : ").append(txtNitReceptor.getText()).append("\n");
+        sb.append("Cliente       : ").append(txtNombreCliente.getText()).append("\n");
+        sb.append("Dirección     : ").append(txtDirecciónCliente.getText()).append("\n");
+        sb.append("-----------------------------------------------------\n");
+        sb.append(String.format("%-5s %-25s %-10s %-10s\n", "CANT", "DESCRIPCIÓN", "PRECIO", "TOTAL"));
+        sb.append("-----------------------------------------------------\n");
+
+        javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblDetalleFactura.getModel();
+        for (int i = 0; i < modelo.getRowCount(); i++) {
+            String cant = modelo.getValueAt(i, 2).toString();
+            String desc = modelo.getValueAt(i, 3).toString();
+            if (desc.length() > 24) desc = desc.substring(0, 21) + "...";
+            String precio = modelo.getValueAt(i, 4).toString();
+            String totalLinea = modelo.getValueAt(i, 6).toString();
+            sb.append(String.format("%-5s %-25s Q.%-8s Q.%-8s\n", cant, desc, precio, totalLinea));
+        }
+
+        sb.append("=====================================================\n");
+        sb.append("SUBTOTAL : Q. ").append(lblSubtotal.getText()).append("\n");
+        sb.append("IVA (12%): Q. ").append(lblIVA.getText()).append("\n");
+        sb.append("TOTAL    : Q. ").append(lblTotal.getText()).append("\n");
+        sb.append("=====================================================\n");
+        sb.append("          ¡Gracias por su compra!                    \n");
+
+        javax.swing.JTextArea txtArea = new javax.swing.JTextArea(sb.toString(), 20, 45);
+        txtArea.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 12));
+        txtArea.setEditable(false);
+
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(txtArea);
+        int opcion = javax.swing.JOptionPane.showOptionDialog(
+                this,
+                scroll,
+                "Vista Previa de Factura para Impresión",
+                javax.swing.JOptionPane.YES_NO_OPTION,
+                javax.swing.JOptionPane.PLAIN_MESSAGE,
+                null,
+                new Object[]{"Mandar a Impresora", "Cerrar"},
+                "Mandar a Impresora"
+        );
+
+        if (opcion == 0) {
+            try {
+                boolean completo = txtArea.print();
+                if (completo) {
+                    javax.swing.JOptionPane.showMessageDialog(this, "Factura enviada a la impresora correctamente.");
+                }
+            } catch (java.awt.print.PrinterException ex) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Error de impresión: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     private void eliminarFacturaBD() {
@@ -193,8 +324,36 @@ public class FrmFactura extends javax.swing.JFrame {
 
     private void buscarCliente() {
         String nitBuscado = javax.swing.JOptionPane.showInputDialog(this, "Ingrese el NIT a buscar:", "Buscar Cliente", javax.swing.JOptionPane.QUESTION_MESSAGE);
-        if (nitBuscado != null && !nitBuscado.trim().isEmpty()) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Búsqueda realizada para el NIT: " + nitBuscado);
+        if (nitBuscado == null || nitBuscado.trim().isEmpty()) {
+            return;
+        }
+
+        try (java.sql.Connection cn = ConexionMySQL.getConnection()) {
+            if (cn != null) {
+                String sql = "SELECT nombre, direccion, nit FROM cliente WHERE LOWER(nit) = ? LIMIT 1";
+                try (java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
+                    ps.setString(1, nitBuscado.trim().toLowerCase());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            txtNitReceptor.setText(rs.getString("nit"));
+                            txtNombreCliente.setText(rs.getString("nombre"));
+                            txtDirecciónCliente.setText(rs.getString("direccion"));
+                            javax.swing.JOptionPane.showMessageDialog(this, "Cliente encontrado: " + rs.getString("nombre"), "Búsqueda Exitosa", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                            return;
+                        }
+                    }
+                }
+            }
+            int opt = javax.swing.JOptionPane.showConfirmDialog(this,
+                    "No se encontró ningún cliente con el NIT: " + nitBuscado + ".\n¿Desea asignar este NIT para el nuevo registro?",
+                    "Cliente No Encontrado",
+                    javax.swing.JOptionPane.YES_NO_OPTION);
+            if (opt == javax.swing.JOptionPane.YES_OPTION) {
+                txtNitReceptor.setText(nitBuscado.trim());
+                txtNombreCliente.requestFocus();
+            }
+        } catch (Exception ex) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Error al buscar cliente: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }
 

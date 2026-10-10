@@ -1,6 +1,7 @@
 package gt.edu.umg.sistema.estudiantes.dao;
 
 import gt.edu.umg.sistema.estudiantes.conexion.ConexionMySQL;
+import gt.edu.umg.sistema.estudiantes.modelo.DetalleFactura;
 import gt.edu.umg.sistema.estudiantes.modelo.Factura;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,8 +30,9 @@ public class FacturaDAOImpl implements FacturaDAO {
             } catch (SQLException ignored) {
             }
 
-            if (factura.getId() > 0) {
-                if (buscarPorId(factura.getId()) != null) {
+            int facturaId = factura.getId();
+            if (facturaId > 0) {
+                if (buscarPorId(facturaId) != null) {
                     String sql = "UPDATE factura SET cliente_id = ?, vendedor_id = ?, numero = ?, subtotal = ?, impuesto = ?, total = ?, estado = ? WHERE id = ?";
                     try (PreparedStatement ps = cn.prepareStatement(sql)) {
                         ps.setInt(1, cId);
@@ -43,19 +45,19 @@ public class FacturaDAOImpl implements FacturaDAO {
                         ps.setInt(8, factura.getId());
                         ps.executeUpdate();
                     }
-                    return;
-                }
-                String sql = "INSERT INTO factura (id, cliente_id, vendedor_id, numero, subtotal, impuesto, total, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                try (PreparedStatement ps = cn.prepareStatement(sql)) {
-                    ps.setInt(1, factura.getId());
-                    ps.setInt(2, cId);
-                    ps.setInt(3, vId);
-                    ps.setString(4, factura.getNumero() == null ? "FACT-" + factura.getId() : factura.getNumero());
-                    ps.setDouble(5, factura.getSubtotal());
-                    ps.setDouble(6, factura.getImpuesto());
-                    ps.setDouble(7, factura.getTotal());
-                    ps.setString(8, factura.getEstado() == null ? "EMITIDA" : factura.getEstado());
-                    ps.executeUpdate();
+                } else {
+                    String sql = "INSERT INTO factura (id, cliente_id, vendedor_id, numero, subtotal, impuesto, total, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                    try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                        ps.setInt(1, factura.getId());
+                        ps.setInt(2, cId);
+                        ps.setInt(3, vId);
+                        ps.setString(4, factura.getNumero() == null ? "FACT-" + factura.getId() : factura.getNumero());
+                        ps.setDouble(5, factura.getSubtotal());
+                        ps.setDouble(6, factura.getImpuesto());
+                        ps.setDouble(7, factura.getTotal());
+                        ps.setString(8, factura.getEstado() == null ? "EMITIDA" : factura.getEstado());
+                        ps.executeUpdate();
+                    }
                 }
             } else {
                 String sql = "INSERT INTO factura (cliente_id, vendedor_id, numero, subtotal, impuesto, total, estado) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -70,16 +72,61 @@ public class FacturaDAOImpl implements FacturaDAO {
                     ps.executeUpdate();
                     try (ResultSet rs = ps.getGeneratedKeys()) {
                         if (rs.next()) {
-                            int nuevoId = rs.getInt(1);
-                            factura.setId(nuevoId);
+                            facturaId = rs.getInt(1);
+                            factura.setId(facturaId);
                             if (factura.getNumero() == null || factura.getNumero().equals("FACT-TEMP")) {
-                                factura.setNumero("FACT-" + String.format("%04d", nuevoId));
+                                factura.setNumero("FACT-" + String.format("%04d", facturaId));
                                 try (Statement st = cn.createStatement()) {
-                                    st.executeUpdate("UPDATE factura SET numero = '" + factura.getNumero() + "' WHERE id = " + nuevoId);
+                                    st.executeUpdate("UPDATE factura SET numero = '" + factura.getNumero() + "' WHERE id = " + facturaId);
                                 } catch (SQLException ignored) {
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            // Persistencia de detalles y descuento de existencias en el inventario
+            if (facturaId > 0 && factura.getDetalles() != null && !factura.getDetalles().isEmpty()) {
+                try (PreparedStatement psDel = cn.prepareStatement("DELETE FROM detalle_factura WHERE factura_id = ?")) {
+                    psDel.setInt(1, facturaId);
+                    psDel.executeUpdate();
+                } catch (SQLException ignored) {
+                }
+
+                String sqlDet = "INSERT INTO detalle_factura (factura_id, producto_id, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
+                String sqlStock = "UPDATE producto SET stock = stock - ? WHERE id = ?";
+                try (PreparedStatement psDet = cn.prepareStatement(sqlDet, Statement.RETURN_GENERATED_KEYS);
+                     PreparedStatement psStock = cn.prepareStatement(sqlStock)) {
+                    for (DetalleFactura d : factura.getDetalles()) {
+                        d.setFacturaId(facturaId);
+                        psDet.setInt(1, facturaId);
+                        psDet.setInt(2, d.getProductoId());
+                        psDet.setInt(3, d.getCantidad());
+                        psDet.setDouble(4, d.getPrecioUnitario());
+                        psDet.setDouble(5, d.getSubtotal());
+                        psDet.executeUpdate();
+                        try (ResultSet rsKeys = psDet.getGeneratedKeys()) {
+                            if (rsKeys.next()) {
+                                d.setId(rsKeys.getInt(1));
+                            }
+                        }
+
+                        // Descontar stock únicamente si la factura es emitida o pagada
+                        if (!"ANULADA".equalsIgnoreCase(factura.getEstado())) {
+                            psStock.setInt(1, d.getCantidad());
+                            psStock.setInt(2, d.getProductoId());
+                            psStock.executeUpdate();
+                        }
+                    }
+                }
+
+                // Si la factura se generó a partir de un pedido, actualizar el estado del pedido a FACTURADO
+                if (factura.getPedidoId() > 0) {
+                    try (PreparedStatement psPed = cn.prepareStatement("UPDATE pedido SET estado = 'FACTURADO' WHERE id = ?")) {
+                        psPed.setInt(1, factura.getPedidoId());
+                        psPed.executeUpdate();
+                    } catch (SQLException ignored) {
                     }
                 }
             }
@@ -104,7 +151,9 @@ public class FacturaDAOImpl implements FacturaDAO {
         String sql = "SELECT id, pedido_id, cliente_id, vendedor_id, numero, fecha_emision, subtotal, impuesto, total, estado FROM factura ORDER BY id ASC";
         try (Statement st = cn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
             while (rs.next()) {
-                lista.add(mapearFactura(rs));
+                Factura f = mapearFactura(rs);
+                cargarDetalles(cn, f);
+                lista.add(f);
             }
         } catch (SQLException e) {
             System.err.println("Error FacturaDAOImpl.listar: " + e.getMessage());
@@ -129,7 +178,9 @@ public class FacturaDAOImpl implements FacturaDAO {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return mapearFactura(rs);
+                    Factura f = mapearFactura(rs);
+                    cargarDetalles(cn, f);
+                    return f;
                 }
             }
         } catch (SQLException e) {
@@ -196,10 +247,43 @@ public class FacturaDAOImpl implements FacturaDAO {
             return;
         }
 
-        String sql = "UPDATE factura SET estado = 'ANULADA' WHERE id = ?";
-        try (PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
+        try {
+            // Verificar estado actual para no reponer stock si ya estaba anulada
+            String sqlCheck = "SELECT estado FROM factura WHERE id = ?";
+            String estadoActual = null;
+            try (PreparedStatement psCheck = cn.prepareStatement(sqlCheck)) {
+                psCheck.setInt(1, id);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next()) {
+                        estadoActual = rs.getString("estado");
+                    }
+                }
+            }
+
+            if (!"ANULADA".equalsIgnoreCase(estadoActual)) {
+                // Reponer existencias de los productos de esta factura
+                String sqlDet = "SELECT producto_id, cantidad FROM detalle_factura WHERE factura_id = ?";
+                String sqlStock = "UPDATE producto SET stock = stock + ? WHERE id = ?";
+                try (PreparedStatement psDet = cn.prepareStatement(sqlDet);
+                     PreparedStatement psStock = cn.prepareStatement(sqlStock)) {
+                    psDet.setInt(1, id);
+                    try (ResultSet rsDet = psDet.executeQuery()) {
+                        while (rsDet.next()) {
+                            int prodId = rsDet.getInt("producto_id");
+                            int cant = rsDet.getInt("cantidad");
+                            psStock.setInt(1, cant);
+                            psStock.setInt(2, prodId);
+                            psStock.executeUpdate();
+                        }
+                    }
+                }
+
+                String sql = "UPDATE factura SET estado = 'ANULADA' WHERE id = ?";
+                try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                    ps.setInt(1, id);
+                    ps.executeUpdate();
+                }
+            }
         } catch (SQLException e) {
             System.err.println("Error FacturaDAOImpl.anular: " + e.getMessage());
         } finally {
@@ -217,10 +301,19 @@ public class FacturaDAOImpl implements FacturaDAO {
             return;
         }
 
-        String sql = "DELETE FROM factura WHERE id = ?";
-        try (PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
+        try {
+            // Eliminar detalles primero para mantener integridad
+            try (PreparedStatement psDelDet = cn.prepareStatement("DELETE FROM detalle_factura WHERE factura_id = ?")) {
+                psDelDet.setInt(1, id);
+                psDelDet.executeUpdate();
+            } catch (SQLException ignored) {
+            }
+
+            String sql = "DELETE FROM factura WHERE id = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                ps.executeUpdate();
+            }
         } catch (SQLException e) {
             System.err.println("Error FacturaDAOImpl.eliminar: " + e.getMessage());
         } finally {
@@ -320,5 +413,32 @@ public class FacturaDAOImpl implements FacturaDAO {
         f.setTotal(rs.getDouble("total"));
         f.setEstado(rs.getString("estado"));
         return f;
+    }
+
+    private void cargarDetalles(Connection cn, Factura f) {
+        if (cn == null || f == null || f.getId() <= 0) {
+            return;
+        }
+
+        String sql = "SELECT id, factura_id, producto_id, cantidad, precio_unitario, subtotal FROM detalle_factura WHERE factura_id = ? ORDER BY id ASC";
+        try (PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, f.getId());
+            try (ResultSet rs = ps.executeQuery()) {
+                f.getDetalles().clear();
+                while (rs.next()) {
+                    DetalleFactura det = new DetalleFactura(
+                            rs.getInt("id"),
+                            rs.getInt("factura_id"),
+                            rs.getInt("producto_id"),
+                            rs.getInt("cantidad"),
+                            rs.getDouble("precio_unitario"),
+                            rs.getDouble("subtotal")
+                    );
+                    f.agregarDetalle(det);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error FacturaDAOImpl.cargarDetalles: " + e.getMessage());
+        }
     }
 }

@@ -1,6 +1,7 @@
 package gt.edu.umg.sistema.estudiantes.dao;
 
 import gt.edu.umg.sistema.estudiantes.conexion.ConexionMySQL;
+import gt.edu.umg.sistema.estudiantes.modelo.DetallePedido;
 import gt.edu.umg.sistema.estudiantes.modelo.Pedido;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,8 +27,9 @@ public class PedidoDAOImpl implements PedidoDAO {
             } catch (SQLException ignored) {
             }
 
-            if (pedido.getId() > 0) {
-                if (buscarPorId(pedido.getId()) != null) {
+            int pedidoId = pedido.getId();
+            if (pedidoId > 0) {
+                if (buscarPorId(pedidoId) != null) {
                     actualizar(pedido);
                     return;
                 }
@@ -58,7 +60,35 @@ public class PedidoDAOImpl implements PedidoDAO {
                     ps.executeUpdate();
                     try (ResultSet rs = ps.getGeneratedKeys()) {
                         if (rs.next()) {
-                            pedido.setId(rs.getInt(1));
+                            pedidoId = rs.getInt(1);
+                            pedido.setId(pedidoId);
+                        }
+                    }
+                }
+            }
+
+            // Guardar detalles del pedido
+            if (pedidoId > 0 && pedido.getDetalles() != null && !pedido.getDetalles().isEmpty()) {
+                try (PreparedStatement psDel = cn.prepareStatement("DELETE FROM detalle_pedido WHERE pedido_id = ?")) {
+                    psDel.setInt(1, pedidoId);
+                    psDel.executeUpdate();
+                } catch (SQLException ignored) {
+                }
+
+                String sqlDet = "INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, precio, subtotal) VALUES (?, ?, ?, ?, ?)";
+                try (PreparedStatement psDet = cn.prepareStatement(sqlDet, Statement.RETURN_GENERATED_KEYS)) {
+                    for (DetallePedido d : pedido.getDetalles()) {
+                        d.setPedidoId(pedidoId);
+                        psDet.setInt(1, pedidoId);
+                        psDet.setInt(2, d.getProductoId());
+                        psDet.setInt(3, d.getCantidad());
+                        psDet.setDouble(4, d.getPrecio());
+                        psDet.setDouble(5, d.getSubtotal());
+                        psDet.executeUpdate();
+                        try (ResultSet rsKeys = psDet.getGeneratedKeys()) {
+                            if (rsKeys.next()) {
+                                d.setId(rsKeys.getInt(1));
+                            }
                         }
                     }
                 }
@@ -84,7 +114,9 @@ public class PedidoDAOImpl implements PedidoDAO {
         String sql = "SELECT id, cliente_id, direccion_envio_id, fecha, estado, total FROM pedido ORDER BY id ASC";
         try (Statement st = cn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
             while (rs.next()) {
-                lista.add(mapearPedido(rs));
+                Pedido p = mapearPedido(rs);
+                cargarDetalles(cn, p);
+                lista.add(p);
             }
         } catch (SQLException e) {
             System.err.println("Error PedidoDAOImpl.listar: " + e.getMessage());
@@ -109,7 +141,9 @@ public class PedidoDAOImpl implements PedidoDAO {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return mapearPedido(rs);
+                    Pedido p = mapearPedido(rs);
+                    cargarDetalles(cn, p);
+                    return p;
                 }
             }
         } catch (SQLException e) {
@@ -188,6 +222,33 @@ public class PedidoDAOImpl implements PedidoDAO {
             ps.setDouble(4, pedido.getTotal());
             ps.setInt(5, pedido.getId());
             ps.executeUpdate();
+
+            // Actualizar detalles si están presentes
+            if (pedido.getDetalles() != null && !pedido.getDetalles().isEmpty()) {
+                try (PreparedStatement psDel = cn.prepareStatement("DELETE FROM detalle_pedido WHERE pedido_id = ?")) {
+                    psDel.setInt(1, pedido.getId());
+                    psDel.executeUpdate();
+                } catch (SQLException ignored) {
+                }
+
+                String sqlDet = "INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, precio, subtotal) VALUES (?, ?, ?, ?, ?)";
+                try (PreparedStatement psDet = cn.prepareStatement(sqlDet, Statement.RETURN_GENERATED_KEYS)) {
+                    for (DetallePedido d : pedido.getDetalles()) {
+                        d.setPedidoId(pedido.getId());
+                        psDet.setInt(1, pedido.getId());
+                        psDet.setInt(2, d.getProductoId());
+                        psDet.setInt(3, d.getCantidad());
+                        psDet.setDouble(4, d.getPrecio());
+                        psDet.setDouble(5, d.getSubtotal());
+                        psDet.executeUpdate();
+                        try (ResultSet rsKeys = psDet.getGeneratedKeys()) {
+                            if (rsKeys.next()) {
+                                d.setId(rsKeys.getInt(1));
+                            }
+                        }
+                    }
+                }
+            }
         } catch (SQLException e) {
             System.err.println("Error PedidoDAOImpl.actualizar: " + e.getMessage());
         } finally {
@@ -205,10 +266,19 @@ public class PedidoDAOImpl implements PedidoDAO {
             return;
         }
 
-        String sql = "DELETE FROM pedido WHERE id = ?";
-        try (PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
+        try {
+            // Eliminar detalles primero para mantener integridad referencial
+            try (PreparedStatement psDelDet = cn.prepareStatement("DELETE FROM detalle_pedido WHERE pedido_id = ?")) {
+                psDelDet.setInt(1, id);
+                psDelDet.executeUpdate();
+            } catch (SQLException ignored) {
+            }
+
+            String sql = "DELETE FROM pedido WHERE id = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                ps.executeUpdate();
+            }
         } catch (SQLException e) {
             System.err.println("Error PedidoDAOImpl.eliminar: " + e.getMessage());
         } finally {
@@ -231,5 +301,32 @@ public class PedidoDAOImpl implements PedidoDAO {
         p.setEstado(rs.getString("estado"));
         p.setTotal(rs.getDouble("total"));
         return p;
+    }
+
+    private void cargarDetalles(Connection cn, Pedido p) {
+        if (cn == null || p == null || p.getId() <= 0) {
+            return;
+        }
+
+        String sql = "SELECT id, pedido_id, producto_id, cantidad, precio, subtotal FROM detalle_pedido WHERE pedido_id = ? ORDER BY id ASC";
+        try (PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, p.getId());
+            try (ResultSet rs = ps.executeQuery()) {
+                p.getDetalles().clear();
+                while (rs.next()) {
+                    DetallePedido det = new DetallePedido(
+                            rs.getInt("id"),
+                            rs.getInt("pedido_id"),
+                            rs.getInt("producto_id"),
+                            rs.getInt("cantidad"),
+                            rs.getDouble("precio"),
+                            rs.getDouble("subtotal")
+                    );
+                    p.getDetalles().add(det);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error PedidoDAOImpl.cargarDetalles: " + e.getMessage());
+        }
     }
 }
