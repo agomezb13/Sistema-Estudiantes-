@@ -11,6 +11,14 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implementacion concreta del DAO para Cliente.
+ * 
+ * Responsabilidades:
+ * - Realiza las consultas y actualizaciones JDBC hacia la base de datos MySQL (Oracle Cloud).
+ * - Sincroniza los resultados con el cache local (BaseDatosMemoria).
+ * - Maneja el cierre seguro de recursos JDBC (PreparedStatement, Connection).
+ */
 public class ClienteDAOImpl implements ClienteDAO {
 
     private final BaseDatosMemoria db = BaseDatosMemoria.getInstancia();

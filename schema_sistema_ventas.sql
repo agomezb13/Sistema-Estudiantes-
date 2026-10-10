@@ -59,35 +59,7 @@ CREATE TABLE IF NOT EXISTS producto (
     CONSTRAINT fk_producto_categoria FOREIGN KEY (categoria_id) REFERENCES categoria(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 6. Tabla: inventario
-CREATE TABLE IF NOT EXISTS inventario (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    producto_id INT NOT NULL UNIQUE,
-    cantidad_disponible INT NOT NULL DEFAULT 0,
-    ubicacion VARCHAR(100),
-    CONSTRAINT fk_inventario_producto FOREIGN KEY (producto_id) REFERENCES producto(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
--- 7. Tabla: carrito
-CREATE TABLE IF NOT EXISTS carrito (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    cliente_id INT NOT NULL,
-    fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_carrito_cliente FOREIGN KEY (cliente_id) REFERENCES cliente(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
--- 8. Tabla: elemento_carrito
-CREATE TABLE IF NOT EXISTS elemento_carrito (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    carrito_id INT NOT NULL,
-    producto_id INT NOT NULL,
-    cantidad INT NOT NULL DEFAULT 1,
-    precio_unitario DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    CONSTRAINT fk_elem_carrito FOREIGN KEY (carrito_id) REFERENCES carrito(id) ON DELETE CASCADE,
-    CONSTRAINT fk_elem_producto FOREIGN KEY (producto_id) REFERENCES producto(id) ON DELETE RESTRICT
-) ENGINE=InnoDB;
-
--- 9. Tabla: pedido
+-- 6. Tabla: pedido
 CREATE TABLE IF NOT EXISTS pedido (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cliente_id INT NOT NULL,
@@ -99,7 +71,7 @@ CREATE TABLE IF NOT EXISTS pedido (
     CONSTRAINT fk_pedido_direccion FOREIGN KEY (direccion_envio_id) REFERENCES direccion_envio(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
--- 10. Tabla: detalle_pedido
+-- 7. Tabla: detalle_pedido
 CREATE TABLE IF NOT EXISTS detalle_pedido (
     id INT AUTO_INCREMENT PRIMARY KEY,
     pedido_id INT NOT NULL,
@@ -111,7 +83,7 @@ CREATE TABLE IF NOT EXISTS detalle_pedido (
     CONSTRAINT fk_det_producto FOREIGN KEY (producto_id) REFERENCES producto(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 11. Tabla: pago
+-- 8. Tabla: pago
 CREATE TABLE IF NOT EXISTS pago (
     id INT AUTO_INCREMENT PRIMARY KEY,
     pedido_id INT NOT NULL,
@@ -121,7 +93,7 @@ CREATE TABLE IF NOT EXISTS pago (
     CONSTRAINT fk_pago_pedido FOREIGN KEY (pedido_id) REFERENCES pedido(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 12. Tabla: factura
+-- 9. Tabla: factura
 CREATE TABLE IF NOT EXISTS factura (
     id INT AUTO_INCREMENT PRIMARY KEY,
     pedido_id INT NULL,
@@ -138,7 +110,7 @@ CREATE TABLE IF NOT EXISTS factura (
     CONSTRAINT fk_factura_vendedor FOREIGN KEY (vendedor_id) REFERENCES vendedor(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 13. Tabla: detalle_factura
+-- 10. Tabla: detalle_factura
 CREATE TABLE IF NOT EXISTS detalle_factura (
     id INT AUTO_INCREMENT PRIMARY KEY,
     factura_id INT NOT NULL,
@@ -150,7 +122,7 @@ CREATE TABLE IF NOT EXISTS detalle_factura (
     CONSTRAINT fk_detfac_producto FOREIGN KEY (producto_id) REFERENCES producto(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Tabla para gestion de estudiantes
+-- 11. Tabla: estudiante
 CREATE TABLE IF NOT EXISTS estudiante (
     id INT AUTO_INCREMENT PRIMARY KEY,
     carnet VARCHAR(20) NOT NULL UNIQUE,

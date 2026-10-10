@@ -1,7 +1,6 @@
 package gt.edu.umg.sistema.estudiantes.datos;
 
 import gt.edu.umg.sistema.estudiantes.conexion.ConexionMySQL;
-import gt.edu.umg.sistema.estudiantes.modelo.Carrito;
 import gt.edu.umg.sistema.estudiantes.modelo.Categoria;
 import gt.edu.umg.sistema.estudiantes.modelo.Cliente;
 import gt.edu.umg.sistema.estudiantes.modelo.DetalleFactura;
@@ -20,6 +19,15 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Capa de Datos en Memoria (Cache sincronizada con MySQL).
+ * 
+ * Patron Singleton:
+ * - Mantiene una unica instancia global en ejecucion (BaseDatosMemoria.getInstancia()).
+ * - Al arrancar, consulta la base de datos MySQL (remota en la nube Oracle) y carga
+ *   los registros en listas locales (clientes, categorias, productos, pedidos, facturas...).
+ * - Permite consultas rapidas para las tablas visuales de Swing y genera correlativos/IDs unicos.
+ */
 public class BaseDatosMemoria {
 
     private static final BaseDatosMemoria INSTANCIA = new BaseDatosMemoria();
@@ -32,11 +40,9 @@ public class BaseDatosMemoria {
     private final List<Pedido> pedidos = new ArrayList<>();
     private final List<Pago> pagos = new ArrayList<>();
     private final List<Factura> facturas = new ArrayList<>();
-    private final List<Carrito> carritos = new ArrayList<>();
 
     private int seqDetallePedido = 1;
     private int seqDetalleFactura = 1;
-    private int seqCarrito = 1;
 
     private BaseDatosMemoria() {
         cargarDatosDesdeBD();
@@ -278,10 +284,6 @@ public class BaseDatosMemoria {
         return seqDetalleFactura++;
     }
 
-    public synchronized int siguienteIdCarrito() {
-        return seqCarrito++;
-    }
-
     public List<Cliente> getClientes() { return clientes; }
     public List<DireccionEnvio> getDirecciones() { return direcciones; }
     public List<Categoria> getCategorias() { return categorias; }
@@ -290,5 +292,4 @@ public class BaseDatosMemoria {
     public List<Pedido> getPedidos() { return pedidos; }
     public List<Pago> getPagos() { return pagos; }
     public List<Factura> getFacturas() { return facturas; }
-    public List<Carrito> getCarritos() { return carritos; }
 }

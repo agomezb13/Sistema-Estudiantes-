@@ -21,14 +21,8 @@ public class Producto {
         this.existencias = existencias;
     }
 
-    public void agregarAlCarrito() {
-    }
-
     public void actualizarStock(int cantidad) {
         this.existencias += cantidad;
-    }
-
-    public void actualizarStock() {
     }
 
     public int getId() {

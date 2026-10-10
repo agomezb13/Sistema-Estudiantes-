@@ -10,6 +10,16 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
+/**
+ * Administrador de conexion JDBC con MySQL.
+ * 
+ * Caracteristicas principales:
+ * 1. Lee la configuracion (host, puerto, usuario, contrasena) desde el archivo 'db.properties'.
+ *    Por defecto se conecta al servidor en la nube Oracle Always Free.
+ * 2. Si las tablas no existen al iniciar la aplicacion, las crea automaticamente
+ *    mediante sentencias DDL (CREATE TABLE IF NOT EXISTS).
+ * 3. Si las tablas estan vacias, inserta datos semilla de prueba (administrador, categorias...).
+ */
 public class ConexionMySQL {
 
     private static String host = "localhost";
@@ -197,12 +207,6 @@ public class ConexionMySQL {
                             + "stock INT NOT NULL DEFAULT 0, "
                             + "sku VARCHAR(50)) ENGINE=InnoDB");
 
-                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS inventario ("
-                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
-                            + "producto_id INT NOT NULL UNIQUE, "
-                            + "cantidad_disponible INT NOT NULL DEFAULT 0, "
-                            + "ubicacion VARCHAR(100)) ENGINE=InnoDB");
-
                     stmt.executeUpdate("CREATE TABLE IF NOT EXISTS pedido ("
                             + "id INT AUTO_INCREMENT PRIMARY KEY, "
                             + "cliente_id INT NOT NULL, "
@@ -225,18 +229,6 @@ public class ConexionMySQL {
                             + "monto DECIMAL(10,2) NOT NULL, "
                             + "metodo VARCHAR(50) NOT NULL, "
                             + "estado VARCHAR(50) NOT NULL DEFAULT 'PENDIENTE') ENGINE=InnoDB");
-
-                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS carrito ("
-                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
-                            + "cliente_id INT NOT NULL, "
-                            + "fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB");
-
-                    stmt.executeUpdate("CREATE TABLE IF NOT EXISTS elemento_carrito ("
-                            + "id INT AUTO_INCREMENT PRIMARY KEY, "
-                            + "carrito_id INT NOT NULL, "
-                            + "producto_id INT NOT NULL, "
-                            + "cantidad INT NOT NULL DEFAULT 1, "
-                            + "precio_unitario DECIMAL(10,2) NOT NULL DEFAULT 0.00) ENGINE=InnoDB");
 
                     stmt.executeUpdate("CREATE TABLE IF NOT EXISTS factura ("
                             + "id INT AUTO_INCREMENT PRIMARY KEY, "
