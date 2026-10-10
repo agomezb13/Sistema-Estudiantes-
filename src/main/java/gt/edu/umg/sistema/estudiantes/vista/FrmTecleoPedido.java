@@ -136,13 +136,12 @@ public class FrmTecleoPedido extends JInternalFrame {
         JPanel panelCabecera = new JPanel(new GridBagLayout());
         if (esModoInvitado) {
             panelCabecera.setBorder(BorderFactory.createTitledBorder("Datos del Comprador"));
-            txtId.setText("(Autogenerado)");
+            txtId.setText("");
             txtId.setEditable(false);
-            FormularioHelper.agregarCampo(panelCabecera, 0, "No. Orden:", txtId);
-            FormularioHelper.agregarCampo(panelCabecera, 1, "Tu Nombre:", txtNombreInvitado);
-            FormularioHelper.agregarCampo(panelCabecera, 2, "Dirección de Entrega:", txtDireccionInvitado);
-            FormularioHelper.agregarCampo(panelCabecera, 3, "Teléfono / Contacto:", txtTelefonoInvitado);
-            FormularioHelper.agregarCampo(panelCabecera, 4, "Fecha:", txtFecha);
+            FormularioHelper.agregarCampo(panelCabecera, 0, "Tu Nombre:", txtNombreInvitado);
+            FormularioHelper.agregarCampo(panelCabecera, 1, "Dirección de Entrega:", txtDireccionInvitado);
+            FormularioHelper.agregarCampo(panelCabecera, 2, "Teléfono / Contacto:", txtTelefonoInvitado);
+            FormularioHelper.agregarCampo(panelCabecera, 3, "Fecha:", txtFecha);
         } else {
             panelCabecera.setBorder(BorderFactory.createTitledBorder("Datos Generales del Pedido"));
             FormularioHelper.agregarCampo(panelCabecera, 0, "No. Pedido:", txtId);
@@ -323,7 +322,7 @@ public class FrmTecleoPedido extends JInternalFrame {
     private void limpiar() {
         actual = null;
         if (esModoInvitado) {
-            txtId.setText("(Autogenerado)");
+            txtId.setText("");
             txtId.setEditable(false);
             txtNombreInvitado.setText("");
             txtDireccionInvitado.setText("");

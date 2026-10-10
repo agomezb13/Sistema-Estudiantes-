@@ -32,13 +32,12 @@ public class FrmInicio extends javax.swing.JFrame {
             txtPassword.setEnabled(true);
             txtPassword.setText("");
             lblPassword.setText("Contraseña:");
-            lblHint.setText("Ingrese la contraseña de Administrador.");
+            lblHint.setText("");
             txtPassword.requestFocus();
         } else {
             txtPassword.setEnabled(false);
             txtPassword.setText("");
-            lblPassword.setText("Contraseña (No requerida):");
-            lblHint.setText("Acceso libre al catálogo de productos y órdenes.");
+            lblHint.setText("");
         }
     }
 
@@ -112,7 +111,7 @@ public class FrmInicio extends javax.swing.JFrame {
         lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         lblTitulo.setForeground(new java.awt.Color(255, 255, 255));
         lblTitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblTitulo.setText("SISTEMA DE GESTIÓN DE VENTAS");
+        lblTitulo.setText("Empresa");
 
         javax.swing.GroupLayout panelNorteLayout = new javax.swing.GroupLayout(panelNorte);
         panelNorte.setLayout(panelNorteLayout);
@@ -120,7 +119,7 @@ public class FrmInicio extends javax.swing.JFrame {
             panelNorteLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(panelNorteLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(lblTitulo, javax.swing.GroupLayout.DEFAULT_SIZE, 438, Short.MAX_VALUE)
+                .addComponent(lblTitulo, javax.swing.GroupLayout.DEFAULT_SIZE, 446, Short.MAX_VALUE)
                 .addContainerGap())
         );
         panelNorteLayout.setVerticalGroup(
@@ -181,7 +180,7 @@ public class FrmInicio extends javax.swing.JFrame {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(cmbTipoAcceso, 0, 240, Short.MAX_VALUE)
                             .addComponent(txtPassword))))
-                .addContainerGap(50, Short.MAX_VALUE))
+                .addContainerGap(58, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(btnIngresar, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -207,7 +206,7 @@ public class FrmInicio extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnIngresar, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnSalir, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(45, Short.MAX_VALUE))
+                .addContainerGap(58, Short.MAX_VALUE))
         );
 
         pack();
